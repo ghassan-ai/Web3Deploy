@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Web3Deploy</title>
+    <meta name="description" content="Manage your IPFS deployments. Upload files, manage providers, and get your decentralized links.">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- ========== Navbar ========== -->
+    <nav class="navbar" id="navbar">
+        <div class="container navbar-inner">
+            <a href="index.html" class="navbar-logo">
+                <div class="logo-icon">W3</div>
+                <span>Web3Deploy</span>
+            </a>
+
+            <!-- Provider status indicator (shown when keys exist) -->
+            <div class="nav-provider-status" id="navProviderStatus">
+                <button class="provider-badge" id="providerBadge" aria-label="Switch provider">
+                    <span class="provider-check-icon">✓</span>
+                    <span id="activeProviderName">Pinata</span>
+                    <svg class="provider-arrow" viewBox="0 0 24 24" width="14" height="14">
+                        <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" fill="none"></polyline>
+                    </svg>
+                </button>
+
+                <!-- Dropdown for switching between saved keys -->
+                <div class="provider-dropdown" id="providerDropdown">
+                    <div class="provider-dropdown-header">Saved Providers</div>
+                    <div class="provider-dropdown-list" id="providerDropdownList">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="provider-dropdown-divider"></div>
+                    <button class="provider-dropdown-action" id="addNewKeyBtn">
+                        <span>＋</span> Add New Key
+                    </button>
+                    <button class="provider-dropdown-action provider-dropdown-danger" id="removeKeyBtn">
+                        <span>✕</span> Remove Current
+                    </button>
+                </div>
+            </div>
+
+            <div class="navbar-links" id="navLinks">
+                <a href="index.html">Home</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========== Main Dashboard ========== -->
+    <main class="dashboard-main" id="dashboardMain">
+
+        <!-- Setup Screen (first visit / add key) -->
+        <section class="setup-screen" id="setupScreen">
+            <div class="setup-card">
+                <div class="setup-glow"></div>
+
+                <div class="setup-icon">🔑</div>
+                <h1 class="setup-title">Connect Your Provider</h1>
+                <p class="setup-subtitle">
+                    Enter your API key to start deploying files to IPFS.
+                    Your key never leaves your browser.
+                </p>
+
+                <form class="setup-form" id="setupForm" autocomplete="off">
+                    <!-- Provider Select -->
+                    <div class="form-group">
+                        <label for="providerSelect">Provider</label>
+                        <div class="select-wrapper">
+                            <select id="providerSelect" class="form-control form-select">
+                                <option value="pinata">📌  Pinata</option>
+                                <option value="filebase">🗄️  Filebase</option>
+                                <option value="lighthouse">🏗️  Lighthouse</option>
+                            </select>
+                            <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16">
+                                <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" fill="none"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- API Key Input -->
+                    <div class="form-group">
+                        <label for="apiKeyInput">API Key / JWT Token</label>
+                        <div class="input-wrapper">
+                            <input
+                                type="password"
+                                id="apiKeyInput"
+                                class="form-control form-input"
+                                placeholder="Paste your API key here…"
+                                autocomplete="off"
+                                spellcheck="false"
+                                required
+                            >
+                            <button type="button" class="input-eye" id="toggleKeyVis" aria-label="Toggle key visibility" title="Show / hide key">
+                                <svg id="eyeOpen" viewBox="0 0 24 24" width="18" height="18">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                                </svg>
+                                <svg id="eyeClosed" viewBox="0 0 24 24" width="18" height="18" style="display:none;">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="form-hint" id="providerHint">
+                            Get your free API key from <a href="https://app.pinata.cloud/developers/api-keys" target="_blank" rel="noopener">Pinata Dashboard</a>
+                        </div>
+                    </div>
+
+                    <!-- Status Message -->
+                    <div class="form-message" id="formMessage"></div>
+
+                    <!-- Verify Button -->
+                    <button type="submit" class="btn btn-primary btn-full" id="verifyBtn">
+                        <span class="btn-text" id="verifyBtnText">🔍 Verify & Save</span>
+                        <span class="btn-spinner" id="verifyBtnSpinner"></span>
+                    </button>
+                </form>
+
+                <div class="setup-security">
+                    <svg viewBox="0 0 24 24" width="14" height="14">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                    Stored in localStorage only — never sent to any server.
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard Content (shown after successful auth) -->
+        <section class="dashboard-content" id="dashboardContent">
+            <div class="container">
+
+                <!-- Tab Bar -->
+                <div class="dash-tabs" id="dashTabs">
+                    <button class="dash-tab active" data-tab="upload" id="tabUpload">📤 Upload</button>
+                    <button class="dash-tab" data-tab="files" id="tabFiles">📁 My Files</button>
+                    <button class="dash-tab" data-tab="domains" id="tabDomains">🌐 Domains</button>
+                </div>
+
+                <!-- ============ TAB: UPLOAD ============ -->
+                <div class="tab-panel active" id="panelUpload">
+
+                    <div class="upload-state" id="stateDropZone">
+                        <div class="pin-name-row">
+                            <label for="pinNameInput">Pin Name <span class="label-optional">(optional)</span></label>
+                            <input type="text" id="pinNameInput" class="form-control" placeholder="my-website-v1">
+                        </div>
+                        <div class="drop-zone" id="dropZone">
+                            <input type="file" id="fileInput" multiple hidden>
+                            <input type="file" id="folderInput" webkitdirectory hidden>
+                            <div class="drop-zone-inner" id="dropZoneInner">
+                                <div class="drop-zone-icon">📂</div>
+                                <h3>Drag &amp; drop files or folders here</h3>
+                                <p>or choose an option below</p>
+                                <div class="drop-zone-actions">
+                                    <button type="button" class="btn btn-secondary" id="selectFilesBtn">📄 Select Files</button>
+                                    <button type="button" class="btn btn-secondary" id="selectFolderBtn">📁 Select Folder</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="upload-state" id="stateFilePreview" style="display:none">
+                        <div class="file-preview-header">
+                            <div><h3>Ready to Upload</h3><span class="file-meta" id="fileMeta">0 files · 0 KB</span></div>
+                            <button type="button" class="btn-icon" id="clearFilesBtn" title="Clear all files">✕</button>
+                        </div>
+                        <div class="pin-name-row compact">
+                            <label for="pinNameInput2">Pin Name <span class="label-optional">(optional)</span></label>
+                            <input type="text" id="pinNameInput2" class="form-control" placeholder="my-website-v1">
+                        </div>
+                        <div class="file-list-scroll" id="fileListScroll"></div>
+                        <div class="file-preview-footer">
+                            <button type="button" class="btn btn-primary btn-full" id="uploadBtn">🚀 Upload to IPFS</button>
+                        </div>
+                    </div>
+
+                    <div class="upload-state" id="stateUploading" style="display:none">
+                        <div class="uploading-card">
+                            <div class="upload-anim"><div class="upload-anim-ring"></div><span class="upload-anim-icon">📤</span></div>
+                            <h3>Uploading to IPFS…</h3>
+                            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+                            <div class="progress-stats">
+                                <span id="progressPercent">0 %</span>
+                                <span id="progressSize">0 / 0 MB</span>
+                                <span id="progressEta">Estimating…</span>
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm" id="cancelUploadBtn">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div class="upload-state" id="stateSuccess" style="display:none">
+                        <div class="result-card">
+                            <div class="result-check-circle">✓</div>
+                            <h3>Successfully Pinned!</h3>
+                            <p class="result-sub">Your content is now live on the decentralized web.</p>
+                            <div class="result-field">
+                                <label>CID (Content Identifier)</label>
+                                <div class="result-value-row">
+                                    <code class="result-cid" id="resultCid">Qm…</code>
+                                    <button type="button" class="btn-icon-sm" id="copyCidBtn" title="Copy CID">📋</button>
+                                </div>
+                            </div>
+                            <div class="result-field">
+                                <label>Gateway Link</label>
+                                <div class="result-value-row">
+                                    <a class="result-link" id="resultLink" href="#" target="_blank" rel="noopener">https://…</a>
+                                    <button type="button" class="btn-icon-sm" id="copyLinkBtn" title="Copy link">📋</button>
+                                    <a class="btn-icon-sm" id="openLinkBtn" href="#" target="_blank" rel="noopener" title="Open in new tab">🔗</a>
+                                </div>
+                            </div>
+                            <div class="result-actions">
+                                <button type="button" class="btn btn-primary" id="newUploadBtn">↑ Upload Another</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="upload-state" id="stateError" style="display:none">
+                        <div class="error-card">
+                            <div class="error-emoji">⚠️</div>
+                            <h3 id="errorTitle">Upload Failed</h3>
+                            <p id="errorMessage">Something went wrong.</p>
+                            <div class="error-actions">
+                                <button type="button" class="btn btn-primary" id="retryBtn">🔄 Retry</button>
+                                <button type="button" class="btn btn-secondary" id="backToDropBtn">← Back</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /panelUpload -->
+
+                <!-- ============ TAB: MY FILES ============ -->
+                <div class="tab-panel" id="panelFiles">
+
+                    <!-- Storage Usage Bar -->
+                    <div class="storage-bar" id="storageBar">
+                        <div class="storage-info">
+                            <span class="storage-label">Storage</span>
+                            <span class="storage-text" id="storageText">Calculating…</span>
+                        </div>
+                        <div class="storage-track">
+                            <div class="storage-fill" id="storageFill"></div>
+                        </div>
+                    </div>
+
+                    <!-- Toolbar: Search / Filter / Sort / View Toggle / Bulk -->
+                    <div class="fm-toolbar">
+                        <div class="fm-toolbar-left">
+                            <div class="fm-search-wrap">
+                                <svg class="fm-search-icon" viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" fill="none"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2"/></svg>
+                                <input type="text" class="fm-search" id="fmSearch" placeholder="Search files…">
+                            </div>
+                            <div class="fm-filters">
+                                <button class="fm-filter active" data-filter="all">All</button>
+                                <button class="fm-filter" data-filter="html">HTML</button>
+                                <button class="fm-filter" data-filter="image">Images</button>
+                                <button class="fm-filter" data-filter="js">JS</button>
+                                <button class="fm-filter" data-filter="css">CSS</button>
+                                <button class="fm-filter" data-filter="other">Other</button>
+                            </div>
+                        </div>
+                        <div class="fm-toolbar-right">
+                            <select class="fm-sort" id="fmSort">
+                                <option value="newest">Newest</option>
+                                <option value="oldest">Oldest</option>
+                                <option value="largest">Largest</option>
+                                <option value="smallest">Smallest</option>
+                            </select>
+                            <div class="fm-view-toggle" id="fmViewToggle">
+                                <button class="fm-view-btn active" data-view="grid" title="Grid view">
+                                    <svg viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" fill="none"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" fill="none"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" fill="none"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                                </button>
+                                <button class="fm-view-btn" data-view="list" title="List view">
+                                    <svg viewBox="0 0 24 24" width="16" height="16"><line x1="8" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2"/><line x1="8" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2"/><line x1="8" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bulk Actions Bar (hidden until selection) -->
+                    <div class="fm-bulk-bar" id="fmBulkBar">
+                        <label class="fm-select-all"><input type="checkbox" id="fmSelectAll"> <span>Select All</span></label>
+                        <span class="fm-bulk-count" id="fmBulkCount">0 selected</span>
+                        <div class="fm-bulk-actions">
+                            <button class="btn btn-secondary btn-sm" id="fmBulkCopy">📋 Copy CIDs</button>
+                            <button class="btn btn-secondary btn-sm fm-btn-danger" id="fmBulkUnpin">✕ Unpin Selected</button>
+                        </div>
+                    </div>
+
+                    <!-- File Grid / List Container -->
+                    <div class="fm-container" id="fmContainer">
+                        <!-- Loading -->
+                        <div class="fm-loading" id="fmLoading">
+                            <div class="upload-anim-ring" style="width:40px;height:40px;margin:40px auto;"></div>
+                            <p>Loading files…</p>
+                        </div>
+                        <!-- Grid View -->
+                        <div class="fm-grid" id="fmGrid"></div>
+                        <!-- List View -->
+                        <div class="fm-list-wrap" id="fmListWrap" style="display:none">
+                            <table class="fm-table">
+                                <thead>
+                                    <tr>
+                                        <th class="fm-th-check"><input type="checkbox" id="fmSelectAllList"></th>
+                                        <th class="fm-th-name fm-sortable" data-col="name">Name</th>
+                                        <th class="fm-th-size fm-sortable" data-col="size">Size</th>
+                                        <th class="fm-th-date fm-sortable" data-col="date">Date</th>
+                                        <th class="fm-th-type fm-sortable" data-col="type">Type</th>
+                                        <th class="fm-th-actions">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fmListBody"></tbody>
+                            </table>
+                        </div>
+                        <!-- Empty State -->
+                        <div class="fm-empty" id="fmEmpty" style="display:none">
+                            <div class="fm-empty-icon">📭</div>
+                            <h3 id="fmEmptyTitle">No files yet</h3>
+                            <p id="fmEmptyMsg">Upload your first file to see it here.</p>
+                            <button class="btn btn-primary" id="fmGoUpload">📤 Upload Files</button>
+                        </div>
+                        <!-- No Search Results -->
+                        <div class="fm-empty" id="fmNoResults" style="display:none">
+                            <div class="fm-empty-icon">🔍</div>
+                            <h3>No results found</h3>
+                            <p>Try a different search term or filter.</p>
+                        </div>
+                    </div>
+
+                </div><!-- /panelFiles -->
+
+                <!-- ============ TAB: DOMAINS ============ -->
+                <div class="tab-panel" id="panelDomains">
+
+                    <!-- Link Domain Form -->
+                    <div class="dm-card">
+                        <h3 class="dm-card-title">🔗 Link a Domain</h3>
+                        <p class="dm-card-sub">Connect your custom domain to an IPFS-hosted site via DNS records.</p>
+
+                        <div class="dm-form-grid">
+                            <div class="form-group">
+                                <label for="dmDomainInput">Domain Name</label>
+                                <input type="text" id="dmDomainInput" class="form-control" placeholder="mysite.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="dmProviderSelect">DNS Provider</label>
+                                <div class="select-wrapper">
+                                    <select id="dmProviderSelect" class="form-control form-select">
+                                        <option value="cloudflare">☁️ Cloudflare</option>
+                                        <option value="godaddy">🟢 GoDaddy</option>
+                                        <option value="namecheap">🔴 Namecheap</option>
+                                        <option value="other">⚙️ Other</option>
+                                    </select>
+                                    <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" fill="none"></polyline></svg>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="dmCidInput">Site CID</label>
+                                <div class="select-wrapper">
+                                    <select id="dmCidInput" class="form-control form-select">
+                                        <option value="">Select a pinned site…</option>
+                                    </select>
+                                    <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" fill="none"></polyline></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" id="dmGenerateBtn">⚡ Generate DNS Records</button>
+                    </div>
+
+                    <!-- DNS Records (hidden until generated) -->
+                    <div class="dm-card" id="dmRecordsCard" style="display:none">
+                        <h3 class="dm-card-title">📋 Required DNS Records</h3>
+                        <p class="dm-card-sub" id="dmProviderInstructions"></p>
+
+                        <div class="dm-records" id="dmRecordsList"></div>
+
+                        <div class="dm-check-row">
+                            <button class="btn btn-secondary" id="dmCheckBtn">🔍 Check Connection</button>
+                            <div class="dm-check-status" id="dmCheckStatus"></div>
+                        </div>
+
+                        <button class="btn btn-primary" id="dmSaveBtn">💾 Save Domain Link</button>
+                    </div>
+
+                    <!-- Linked Domains Table -->
+                    <div class="dm-card">
+                        <h3 class="dm-card-title">🌍 Linked Domains</h3>
+                        <div class="dm-table-wrap" id="dmTableWrap">
+                            <table class="fm-table dm-table">
+                                <thead>
+                                    <tr>
+                                        <th>Domain</th>
+                                        <th>Status</th>
+                                        <th>Linked Site</th>
+                                        <th>Last Checked</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dmTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="fm-empty" id="dmEmpty">
+                            <div class="fm-empty-icon">🌐</div>
+                            <h3>No domains linked yet</h3>
+                            <p>Link your first domain above to get started.</p>
+                        </div>
+                    </div>
+
+                </div><!-- /panelDomains -->
+
+                <!-- Domain Update CID Alert Modal -->
+                <div class="modal-overlay" id="dmUpdateOverlay">
+                    <div class="modal-card">
+                        <div class="modal-icon">⚠️</div>
+                        <h3 style="color:var(--accent-blue)">تحديث مطلوب</h3>
+                        <p class="modal-ar">يجب تحديث TXT Record بالـ CID الجديد</p>
+                        <p class="modal-en">You need to update your _dnslink TXT record with the new CID.</p>
+                        <div class="modal-cid" id="dmNewCid">—</div>
+                        <div class="dm-record-box dm-record-box-modal">
+                            <div class="dm-record-label">TXT Record Value</div>
+                            <code class="dm-record-value" id="dmNewTxtValue">—</code>
+                            <button class="btn-icon-sm" id="dmCopyNewTxt" title="Copy">📋</button>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn btn-secondary" id="dmCloseUpdate">Close</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Domain Unlink Confirm Modal -->
+                <div class="modal-overlay" id="dmUnlinkOverlay">
+                    <div class="modal-card">
+                        <div class="modal-icon">🗑️</div>
+                        <h3 style="color:#ff5566">Unlink Domain</h3>
+                        <p class="modal-en">Remove <strong id="dmUnlinkName">—</strong> from your linked domains?</p>
+                        <p class="modal-ar">تذكر حذف سجلات DNS من مزود النطاق الخاص بك.</p>
+                        <div class="modal-actions">
+                            <button class="btn btn-primary fm-btn-danger" id="dmConfirmUnlink">🗑️ Unlink</button>
+                            <button class="btn btn-secondary" id="dmCancelUnlink">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ============ VERSION HISTORY PANEL ============ -->
+        <div class="version-overlay" id="versionOverlay"></div>
+        <aside class="version-panel" id="versionPanel">
+            <div class="version-panel-header">
+                <h3>Version History</h3>
+                <button class="btn-icon" id="closeVersionPanel">✕</button>
+            </div>
+            <div class="version-panel-site">
+                <div>
+                    <strong id="vpSiteName">—</strong>
+                    <span class="version-badge" id="vpStatus">Active</span>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="vpCompareBtn" style="display:none">🔀 Compare</button>
+            </div>
+            <div class="version-compare-bar" id="vpCompareBar" style="display:none">
+                <p>Select two versions to compare</p>
+                <span class="fm-bulk-count" id="vpCompareCount">0 selected</span>
+                <button class="btn btn-secondary btn-sm" id="vpCancelCompare">Cancel</button>
+            </div>
+            <div class="version-list" id="versionList">
+                <!-- populated by JS -->
+            </div>
+        </aside>
+
+        <!-- ============ ROLLBACK CONFIRM MODAL ============ -->
+        <div class="modal-overlay" id="rollbackOverlay">
+            <div class="modal-card">
+                <div class="modal-icon">🔄</div>
+                <h3 style="color:var(--accent-blue)">Rollback Confirmation</h3>
+                <p class="modal-en">Are you sure you want to rollback to this version?</p>
+                <div class="modal-cid" id="rollbackCid">—</div>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" id="confirmRollback">🔄 Rollback</button>
+                    <button class="btn btn-secondary" id="cancelRollback">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ COMPARE RESULT MODAL ============ -->
+        <div class="modal-overlay" id="compareOverlay">
+            <div class="modal-card compare-modal-card">
+                <div class="modal-icon">🔀</div>
+                <h3 style="color:var(--accent-blue)">Version Comparison</h3>
+                <div class="compare-versions-row" id="compareVersionsRow"></div>
+                <div class="compare-stats" id="compareStats"></div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="closeCompare">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ UNPIN MODAL ============ -->
+        <div class="modal-overlay" id="unpinOverlay">
+            <div class="modal-card" id="unpinModal">
+                <div class="modal-icon">⚠️</div>
+                <h3>تحذير</h3>
+                <p class="modal-ar">تحذير: حذف هذا الملف سيزيله من خدمة Pinata. قد يختفي من IPFS نهائياً إذا لم يكن أحد آخر يحتفظ به.</p>
+                <p class="modal-en">Warning: Unpinning will remove this file from Pinata. It may disappear from IPFS permanently if no other node is hosting it.</p>
+                <div class="modal-cid" id="unpinCid">—</div>
+                <div class="modal-actions">
+                    <button class="btn btn-primary fm-btn-danger" id="confirmUnpin">✕ Unpin</button>
+                    <button class="btn btn-secondary" id="cancelUnpin">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ BULK UNPIN MODAL ============ -->
+        <div class="modal-overlay" id="bulkUnpinOverlay">
+            <div class="modal-card">
+                <div class="modal-icon">⚠️</div>
+                <h3>Bulk Unpin</h3>
+                <p class="modal-ar">تحذير: سيتم حذف <strong id="bulkCount">0</strong> ملفات من Pinata نهائياً.</p>
+                <p class="modal-en">This will unpin <strong id="bulkCount2">0</strong> files. This action cannot be undone.</p>
+                <div class="modal-actions">
+                    <button class="btn btn-primary fm-btn-danger" id="confirmBulkUnpin">✕ Unpin All</button>
+                    <button class="btn btn-secondary" id="cancelBulkUnpin">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ STORAGE WARNING POPUP ============ -->
+        <div class="storage-warning" id="storageWarning" style="display:none">
+            <div class="storage-warning-inner">
+                <span>⚠️</span>
+                <p>You're using over 90% of your storage. Consider deleting old files.</p>
+                <button class="btn-icon" id="closeStorageWarn">✕</button>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="js/pinata.js"></script>
+    <script src="js/filemanager.js"></script>
+    <script src="js/domainmanager.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

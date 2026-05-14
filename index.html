@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3Deploy — انشر موقعك على IPFS</title>
+    <meta name="description"
+        content="Upload and host your website on IPFS in 30 seconds. Decentralized storage powered by Pinata, Filebase & Lighthouse.">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- ========== Navbar ========== -->
+    <nav class="navbar" id="navbar">
+        <div class="container navbar-inner">
+            <a href="index.html" class="navbar-logo">
+                <div class="logo-icon">W3</div>
+                <span>Web3Deploy</span>
+            </a>
+
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <div class="navbar-links" id="navLinks">
+                <a href="#hero">Home</a>
+                <a href="#how-it-works">How it works</a>
+                <a href="#providers">Providers</a>
+                <a href="dashboard.html" class="nav-cta">Start Now →</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========== Hero Section ========== -->
+    <section class="hero" id="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="pulse-dot"></span>
+                Decentralized &middot; Permanent &middot; Fast
+            </div>
+
+            <h1>
+                انشر موقعك على <span class="highlight">IPFS</span> في 30 ثانية
+            </h1>
+
+            <p class="hero-subtitle">
+                Deploy your website to the decentralized web with zero configuration.
+                Upload your files, get a permanent IPFS link, and share it with the world — no servers needed.
+            </p>
+
+            <div class="hero-actions">
+                <a href="dashboard.html" class="btn btn-primary" id="cta-hero">
+                    🚀 Start Deploying
+                </a>
+                <a href="#how-it-works" class="btn btn-secondary">
+                    Learn How ↓
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== How It Works ========== -->
+    <section class="steps-section section-padding" id="how-it-works">
+        <div class="container">
+            <div class="text-center reveal">
+                <span class="section-label">How It Works</span>
+                <h2 class="section-title">Three Simple Steps</h2>
+                <p class="section-subtitle mx-auto">
+                    Go from local files to a live decentralized website in under a minute.
+                </p>
+            </div>
+
+            <div class="steps-grid">
+                <!-- Step 1 -->
+                <div class="step-card reveal">
+                    <span class="step-number">01</span>
+                    <span class="step-emoji">🔑</span>
+                    <h3>Get Your API Key</h3>
+                    <p>
+                        Sign up for a free account on Pinata, Filebase, or Lighthouse
+                        and grab your API key from the dashboard.
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-card reveal">
+                    <span class="step-number">02</span>
+                    <span class="step-emoji">📤</span>
+                    <h3>Upload Your Files</h3>
+                    <p>
+                        Drag and drop your website files or select them manually.
+                        We handle the packaging and pinning automatically.
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="step-card reveal">
+                    <span class="step-number">03</span>
+                    <span class="step-emoji">🔗</span>
+                    <h3>Get Your IPFS Link</h3>
+                    <p>
+                        Your content is live on the decentralized web.
+                        Copy your unique IPFS link and share it instantly.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== Provider Comparison ========== -->
+    <section class="providers-section section-padding" id="providers">
+        <div class="container">
+            <div class="text-center reveal">
+                <span class="section-label">Providers</span>
+                <h2 class="section-title">Choose Your Storage Provider</h2>
+                <p class="section-subtitle mx-auto">
+                    Compare the leading IPFS pinning services and pick the one that fits your needs.
+                </p>
+            </div>
+
+            <div class="providers-table-wrapper reveal">
+                <table class="providers-table" id="providers-table">
+                    <thead>
+                        <tr>
+                            <th>Provider</th>
+                            <th>Free Storage</th>
+                            <th>Speed</th>
+                            <th>Permanent Storage</th>
+                            <th>Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="provider-name">
+                                    <div class="provider-icon pinata">📌</div>
+                                    Pinata
+                                </div>
+                            </td>
+                            <td>1 GB</td>
+                            <td><span class="badge-yes">⚡ Fast</span></td>
+                            <td><span class="badge-partial">⏳ While Pinned</span></td>
+                            <td>Free / $20/mo</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="provider-name">
+                                    <div class="provider-icon filebase">🗄️</div>
+                                    Filebase
+                                </div>
+                            </td>
+                            <td>5 GB</td>
+                            <td><span class="badge-yes">⚡ Fast</span></td>
+                            <td><span class="badge-yes">✓ Yes</span></td>
+                            <td>Free / Pay-as-you-go</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="provider-name">
+                                    <div class="provider-icon lighthouse">🏗️</div>
+                                    Lighthouse
+                                </div>
+                            </td>
+                            <td>Unlimited*</td>
+                            <td><span class="badge-partial">🟡 Moderate</span></td>
+                            <td><span class="badge-yes">✓ Yes</span></td>
+                            <td>Pay once, store forever</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FAQ Section ========== -->
+    <section class="faq-section section-padding" id="faq">
+        <div class="container">
+            <div class="text-center reveal">
+                <span class="section-label">FAQ</span>
+                <h2 class="section-title">Frequently Asked Questions</h2>
+                <p class="section-subtitle mx-auto">
+                    Everything you need to know about decentralized hosting with Web3Deploy.
+                </p>
+            </div>
+
+            <div class="faq-list">
+                <!-- FAQ 1 -->
+                <div class="faq-item reveal" id="faq-1">
+                    <div class="faq-question" data-faq="1">
+                        <h3>What is IPFS?</h3>
+                        <div class="faq-toggle">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            IPFS (InterPlanetary File System) is a peer-to-peer network protocol designed
+                            to make the web faster, safer, and more open. Instead of relying on centralized
+                            servers, IPFS distributes your content across a decentralized network of nodes,
+                            making it censorship-resistant and permanently accessible.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 2 -->
+                <div class="faq-item reveal" id="faq-2">
+                    <div class="faq-question" data-faq="2">
+                        <h3>Is my data safe?</h3>
+                        <div class="faq-toggle">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            Yes. Your API keys are stored exclusively in your browser's localStorage and
+                            never leave your device. All uploads go directly from your browser to the
+                            provider's API — we don't proxy, log, or store any of your data or credentials.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 3 -->
+                <div class="faq-item reveal" id="faq-3">
+                    <div class="faq-question" data-faq="3">
+                        <h3>What happens when I reach the storage limit?</h3>
+                        <div class="faq-toggle">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            Each provider has its own free tier limit. When you reach it, you can either
+                            upgrade to a paid plan directly with the provider, switch to a different
+                            provider, or unpin old files to free up space. Web3Deploy makes it easy to
+                            manage multiple providers from one dashboard.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 4 -->
+                <div class="faq-item reveal" id="faq-4">
+                    <div class="faq-question" data-faq="4">
+                        <h3>How do I connect my own domain?</h3>
+                        <div class="faq-toggle">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            After uploading, you can link a custom domain by setting a DNSLink TXT record
+                            pointing to your IPFS content hash. We provide step-by-step instructions in
+                            the dashboard. Alternatively, you can use services like Fleek or Cloudflare
+                            to map your domain to your IPFS deployment.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== Footer ========== -->
+    <footer class="footer" id="footer">
+        <div class="container footer-inner">
+            <div class="footer-brand">
+                <div class="logo-icon">W3</div>
+                Web3Deploy
+            </div>
+
+            <div class="footer-links">
+                <a href="#hero">Home</a>
+                <a href="#how-it-works">How it works</a>
+                <a href="https://github.com/" target="_blank" rel="noopener">
+                    ⭐ GitHub
+                </a>
+            </div>
+
+            <div class="footer-copy">
+                &copy; 2026 Web3Deploy &mdash; Decentralized hosting made simple.
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>
