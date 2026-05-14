@@ -18,6 +18,7 @@ No backend, no server — everything runs in the browser.
 - js/app.js → Main logic and auth
 - js/pinata.js → Pinata API integration
 - js/filebase.js → Filebase API integration
+- js/wallet.js → MetaMask wallet authentication
 
 ## Design Rules
 - Dark theme only, background: #0a0a0f
@@ -37,3 +38,6 @@ No backend, no server — everything runs in the browser.
 - [x] Phase 4: Upload system
 - [x] Phase 5: File manager
 - [x] Phase 6: Domain manager
+- [x] Phase 7: تسجيل الدخول بالمحفظة
+- [x] Phase 8: حفظ الملفات على IPFS
+- [x] Phase 9: حفظ الدومينات على IPFS

@@ -251,6 +251,11 @@
                 initUpload(getActiveKey);
                 initTabs(getActiveKey);
             }
+
+            if (typeof FileManager !== 'undefined') {
+                FileManager.init(getActiveKey);
+                FileManager.prefetchIndex();
+            }
         }
 
         // -------------------------------------------
@@ -282,7 +287,7 @@
                                 FileManager.init(getKeyFn);
                                 fmLoaded = true;
                             }
-                            FileManager.loadFiles();
+                            FileManager.loadFiles({ showSyncStatus: true });
                         }
                     }
 
@@ -294,6 +299,7 @@
                                 dmLoaded = true;
                             }
                             DomainManager.populateCids();
+                            DomainManager.loadDomains({ showSyncStatus: true });
                         }
                     }
                 });
@@ -825,6 +831,33 @@
                 resultLink.textContent = result.gatewayUrl;
                 resultLink.href = result.gatewayUrl;
                 openLinkBtn.href = result.gatewayUrl;
+
+                // --- Persist to IPFS index (if wallet connected) ---
+                if (typeof IpfsIndex !== 'undefined' && typeof WalletAuth !== 'undefined' && WalletAuth.isConnected()) {
+                    var uploadName = pinName || (selectedFiles.length === 1 ? selectedFiles[0].file.name : 'upload');
+                    var totalSize = 0;
+                    for (var s = 0; s < selectedFiles.length; s++) totalSize += selectedFiles[s].file.size;
+                    var ext = (uploadName.split('.').pop() || '').toLowerCase();
+                    var ftype = 'other';
+                    if (['html','htm'].indexOf(ext) !== -1) ftype = 'html';
+                    else if (['png','jpg','jpeg','gif','svg','webp','ico'].indexOf(ext) !== -1) ftype = 'image';
+                    else if (['js','ts','mjs'].indexOf(ext) !== -1) ftype = 'js';
+                    else if (['css','scss','less'].indexOf(ext) !== -1) ftype = 'css';
+
+                    var fileInfo = {
+                        name: uploadName,
+                        cid: result.cid,
+                        size: result.size || totalSize,
+                        date: new Date().toISOString(),
+                        gateway: result.gatewayUrl,
+                        type: ftype
+                    };
+
+                    // Fire-and-forget: persist to IPFS index
+                    IpfsIndex.addFile(fileInfo, active.provider, active.key, WalletAuth.getAddress()).catch(function (e) {
+                        console.warn('Index persist failed:', e);
+                    });
+                }
 
             } catch (err) {
                 if (err && err.type === 'abort') return; // user cancelled

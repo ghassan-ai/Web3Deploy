@@ -331,11 +331,44 @@ const PinataAPI = (function () {
     }
 
     // -------------------------------------------
+    // Upload a JSON object as a file to IPFS
+    // Returns { cid, size, timestamp }
+    // -------------------------------------------
+    async function uploadJSON(jsonData, fileName, apiKey) {
+        var jsonStr = JSON.stringify(jsonData, null, 2);
+        var blob = new Blob([jsonStr], { type: 'application/json' });
+        var file = new File([blob], fileName || 'data.json', { type: 'application/json' });
+
+        var formData = new FormData();
+        formData.append('file', file);
+        formData.append('pinataMetadata', JSON.stringify({ name: fileName || 'data.json' }));
+
+        var res = await fetch(BASE_URL + '/pinning/pinFileToIPFS', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + apiKey },
+            body: formData
+        });
+
+        if (!res.ok) {
+            if (res.status === 401) throw { type: 'auth', message: 'API key expired or invalid.' };
+            throw { type: 'server', message: 'Failed to upload JSON (HTTP ' + res.status + ')' };
+        }
+
+        var data = await res.json();
+        return {
+            cid: data.IpfsHash,
+            size: data.PinSize,
+            timestamp: data.Timestamp
+        };
+    }
+
+    // -------------------------------------------
     // Public API
     // -------------------------------------------
     return {
         testAuth: testAuth,
         upload: upload,
+        uploadJSON: uploadJSON,
         listPins: listPins,
         unpin: unpin,
         unpinBulk: unpinBulk,
