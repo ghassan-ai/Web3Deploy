@@ -196,7 +196,7 @@ var WalletAuth = (function () {
             console.warn('Wallet connection failed:', err);
 
             if (err.code === 4001 || (err.info && err.info.error && err.info.error.code === 4001)) {
-                showWalletToast('Connection request rejected by user.', 'error');
+                showWalletToast('Wallet connection cancelled. You can use an API key instead.', 'info');
             } else if (err.code === -32002) {
                 showWalletToast('MetaMask is already processing a request. Check the extension.', 'error');
             } else {
