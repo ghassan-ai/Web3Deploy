@@ -34,6 +34,13 @@
             verifyUrl: null, // No simple test endpoint
             hint: 'Get your API key from <a href="https://files.lighthouse.storage/" target="_blank" rel="noopener">Lighthouse Dashboard</a>',
             buildHeaders: null
+        },
+        arweave: {
+            name: 'Arweave',
+            icon: '⛓️',
+            verifyUrl: null,
+            hint: 'Get your wallet from <a href="https://arweave.app" target="_blank">arweave.app</a> → Export → Download JSON',
+            buildHeaders: null
         }
     };
 
@@ -413,6 +420,15 @@
             if (providerHint && config) {
                 providerHint.innerHTML = config.hint;
             }
+            if (provider === 'arweave') {
+                apiKeyInput.type = 'file';
+                apiKeyInput.accept = '.json';
+                toggleKeyVis.style.display = 'none';
+            } else {
+                apiKeyInput.type = 'password';
+                apiKeyInput.removeAttribute('accept');
+                toggleKeyVis.style.display = 'block';
+            }
         }
 
         providerSelect.addEventListener('change', updateHint);
@@ -474,6 +490,58 @@
             e.preventDefault();
 
             const provider = providerSelect.value;
+
+            if (provider === 'arweave') {
+                const file = apiKeyInput.files && apiKeyInput.files[0];
+                if (!file) {
+                    showMessage('Please select your Arweave wallet JSON file.', 'error');
+                    return;
+                }
+
+                verifyBtn.classList.add('loading');
+                verifyBtn.disabled = true;
+                clearMessage();
+
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const walletStr = evt.target.result;
+                    try {
+                        JSON.parse(walletStr); // verify it's valid JSON
+                        localStorage.setItem('arweave_wallet', walletStr);
+
+                        const keys = getSavedKeys();
+                        let duplicateIdx = keys.findIndex(k => k.provider === provider && k.key === 'arweave_wallet');
+                        
+                        if (duplicateIdx === -1) {
+                            keys.push({
+                                provider: provider,
+                                key: 'arweave_wallet',
+                                verified: true,
+                                addedAt: new Date().toISOString()
+                            });
+                            saveKeys(keys);
+                            setActiveIndex(keys.length - 1);
+                        } else {
+                            setActiveIndex(duplicateIdx);
+                        }
+
+                        showMessage('✓ Arweave wallet updated successfully!', 'success');
+                        setTimeout(() => { showDashboard(); }, 1000);
+                    } catch (err) {
+                        showMessage('Invalid wallet file. Must be a valid JSON format.', 'error');
+                        verifyBtn.classList.remove('loading');
+                        verifyBtn.disabled = false;
+                    }
+                };
+                reader.onerror = function() {
+                    showMessage('Failed to read wallet file. Try again.', 'error');
+                    verifyBtn.classList.remove('loading');
+                    verifyBtn.disabled = false;
+                };
+                reader.readAsText(file);
+                return;
+            }
+
             const apiKey = apiKeyInput.value.trim();
 
             // Validation
@@ -831,6 +899,59 @@
                 resultLink.textContent = result.gatewayUrl;
                 resultLink.href = result.gatewayUrl;
                 openLinkBtn.href = result.gatewayUrl;
+
+                // --- Handle Arweave Backup ---
+                var toggles = document.querySelectorAll('#arweaveBackupToggle');
+                var hints = document.querySelectorAll('#arweaveWalletHint');
+                var isArweaveChecked = false;
+                toggles.forEach(function(t) { if (t.checked) isArweaveChecked = true; });
+
+                var arweaveResultField = document.getElementById('arweaveResultField');
+                var arweaveStatus = document.getElementById('arweaveStatus');
+                var arweaveLink = document.getElementById('arweaveLink');
+
+                if (isArweaveChecked) {
+                    var walletStr = localStorage.getItem('arweave_wallet');
+                    if (walletStr) {
+                        if (arweaveResultField) arweaveResultField.style.display = 'block';
+                        if (arweaveStatus) {
+                            arweaveStatus.textContent = 'Uploading...';
+                            arweaveStatus.style.color = '';
+                        }
+                        if (arweaveLink) arweaveLink.style.display = 'none';
+
+                        var fileToUpload = selectedFiles[0].file; // Use first selected file for Arweave
+                        if (typeof StorageProviders !== 'undefined' && StorageProviders.uploadArweave) {
+                            StorageProviders.uploadArweave(fileToUpload)
+                                .then(function(arRes) {
+                                    if (arweaveStatus) {
+                                        arweaveStatus.textContent = '✓ Permanently Archived';
+                                        arweaveStatus.style.color = '#00ff88';
+                                    }
+                                    if (arweaveLink) {
+                                        arweaveLink.href = arRes.url;
+                                        arweaveLink.style.display = 'inline-flex';
+                                    }
+                                })
+                                .catch(function(err) {
+                                    console.warn('Arweave backup failed:', err);
+                                    if (arweaveStatus) {
+                                        arweaveStatus.textContent = '⚠️ Backup failed';
+                                        arweaveStatus.style.color = '#ff5566';
+                                    }
+                                });
+                        } else {
+                            console.warn('Arweave provider not found.');
+                        }
+                    } else {
+                        hints.forEach(function(h) { h.style.display = 'block'; });
+                        toggles.forEach(function(t) { t.checked = false; });
+                        if (arweaveResultField) arweaveResultField.style.display = 'none';
+                    }
+                } else {
+                    if (arweaveResultField) arweaveResultField.style.display = 'none';
+                    hints.forEach(function(h) { h.style.display = 'none'; });
+                }
 
                 // --- Persist to IPFS index (if wallet connected) ---
                 if (typeof IpfsIndex !== 'undefined' && typeof WalletAuth !== 'undefined' && WalletAuth.isConnected()) {

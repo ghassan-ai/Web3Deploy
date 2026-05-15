@@ -6,6 +6,7 @@
     <title>Dashboard — Web3Deploy</title>
     <meta name="description" content="Manage your IPFS deployments. Upload files, manage providers, and get your decentralized links.">
     <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/arweave/bundles/web.bundle.js"></script>
 </head>
 <body>
 
@@ -114,6 +115,7 @@
                                         <option value="pinata">📌  Pinata</option>
                                         <option value="filebase">🗄️  Filebase</option>
                                         <option value="lighthouse">🏗️  Lighthouse</option>
+                                        <option value="arweave">⛓️ Arweave (Permanent)</option>
                                     </select>
                                     <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16">
                                         <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" fill="none"></polyline>
@@ -203,6 +205,16 @@
                                     <button type="button" class="btn btn-secondary" id="selectFilesBtn">📄 Select Files</button>
                                     <button type="button" class="btn btn-secondary" id="selectFolderBtn">📁 Select Folder</button>
                                 </div>
+                                <div class="dual-upload-row">
+                                    <label class="toggle-label">
+                                        <input type="checkbox" id="arweaveBackupToggle">
+                                        <span class="toggle-switch"></span>
+                                        <span>♾️ Also backup to Arweave (permanent)</span>
+                                    </label>
+                                    <span class="toggle-hint" id="arweaveWalletHint" style="display:none;color:#ff5566">
+                                        ⚠️ Set up Arweave wallet first
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -218,6 +230,16 @@
                         </div>
                         <div class="file-list-scroll" id="fileListScroll"></div>
                         <div class="file-preview-footer">
+                            <div class="dual-upload-row">
+                                <label class="toggle-label">
+                                    <input type="checkbox" id="arweaveBackupToggle">
+                                    <span class="toggle-switch"></span>
+                                    <span>♾️ Also backup to Arweave (permanent)</span>
+                                </label>
+                                <span class="toggle-hint" id="arweaveWalletHint" style="display:none;color:#ff5566">
+                                    ⚠️ Set up Arweave wallet first
+                                </span>
+                            </div>
                             <button type="button" class="btn btn-primary btn-full" id="uploadBtn">🚀 Upload to IPFS</button>
                         </div>
                     </div>
@@ -254,6 +276,15 @@
                                     <a class="result-link" id="resultLink" href="#" target="_blank" rel="noopener">https://…</a>
                                     <button type="button" class="btn-icon-sm" id="copyLinkBtn" title="Copy link">📋</button>
                                     <a class="btn-icon-sm" id="openLinkBtn" href="#" target="_blank" rel="noopener" title="Open in new tab">🔗</a>
+                                </div>
+                            </div>
+                            <div class="result-field" id="arweaveResultField" style="display:none">
+                                <label>♾️ Arweave Backup</label>
+                                <div class="result-value-row">
+                                    <span class="arweave-status" id="arweaveStatus">Uploading...</span>
+                                    <a class="result-link" id="arweaveLink" href="#" target="_blank" style="display:none">
+                                        View on Arweave →
+                                    </a>
                                 </div>
                             </div>
                             <div class="result-actions">

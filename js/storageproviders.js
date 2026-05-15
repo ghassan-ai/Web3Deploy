@@ -83,9 +83,34 @@ var StorageProviders = (function () {
         gatewayUrl: 'https://gateway.lighthouse.storage/ipfs/'
     });
 
+    var arweaveAdapter = buildAdapter('arweave', {
+        name: 'Arweave',
+        gatewayUrl: 'https://arweave.net/'
+    });
+
+    async function uploadArweave(file) {
+        var walletStr = localStorage.getItem('arweave_wallet');
+        if (!walletStr) throw new Error('Arweave wallet not found');
+        var wallet = JSON.parse(walletStr);
+
+        var arweave = Arweave.init({ host: 'arweave.net', port: 443, protocol: 'https' });
+        
+        var arrayBuffer = await file.arrayBuffer();
+        var fileBytes = new Uint8Array(arrayBuffer);
+        
+        var tx = await arweave.createTransaction({ data: fileBytes });
+        tx.addTag('Content-Type', file.type || 'application/octet-stream');
+        
+        await arweave.transactions.sign(tx, wallet);
+        await arweave.transactions.post(tx);
+        
+        return { txId: tx.id, url: 'https://arweave.net/' + tx.id };
+    }
+
     function getAdapter(providerId) {
         if (providerId === 'filebase') return filebaseAdapter;
         if (providerId === 'lighthouse') return lighthouseAdapter;
+        if (providerId === 'arweave') return arweaveAdapter;
         return pinataAdapter;
     }
 
@@ -113,6 +138,7 @@ var StorageProviders = (function () {
     return {
         getAdapter: getAdapter,
         unpinBulk: unpinBulk,
-        ensureTrailingSlash: ensureTrailingSlash
+        ensureTrailingSlash: ensureTrailingSlash,
+        uploadArweave: uploadArweave
     };
 })();

@@ -34,7 +34,78 @@ var WalletAuth = (function () {
      * Check if MetaMask / window.ethereum is available
      */
     function hasEthereum() {
-        return typeof window.ethereum !== 'undefined';
+        return !!getEthereumProvider();
+    }
+
+    function getEthereumProvider() {
+        if (typeof window.ethereum !== 'undefined') return window.ethereum;
+        if (typeof window.web3 !== 'undefined' && window.web3.currentProvider) return window.web3.currentProvider;
+        return null;
+    }
+
+    function canRequest(provider) {
+        return !!(provider && (provider.request || provider.sendAsync || provider.send));
+    }
+
+    function ethereumRequest(method, params) {
+        var provider = getEthereumProvider();
+        if (!provider) return Promise.reject(new Error('No Ethereum provider'));
+
+        if (provider.request) {
+            return provider.request({ method: method, params: params || [] });
+        }
+
+        return new Promise(function (resolve, reject) {
+            var payload = { id: Date.now(), jsonrpc: '2.0', method: method, params: params || [] };
+
+            if (provider.sendAsync) {
+                provider.sendAsync(payload, function (err, res) {
+                    if (err) return reject(err);
+                    resolve(res && res.result);
+                });
+                return;
+            }
+
+            if (provider.send) {
+                try {
+                    var res = provider.send(payload, function (err, resAsync) {
+                        if (err) return reject(err);
+                        resolve(resAsync && resAsync.result);
+                    });
+                    if (res && typeof res.then === 'function') {
+                        res.then(function (r) { resolve(r && r.result !== undefined ? r.result : r); }).catch(reject);
+                        return;
+                    }
+                    if (res && res.result !== undefined) return resolve(res.result);
+                } catch (err) {
+                    return reject(err);
+                }
+            }
+
+            reject(new Error('Ethereum provider does not support request'));
+        });
+    }
+
+    function hasEthers() {
+        return typeof ethers !== 'undefined' && ethers.BrowserProvider;
+    }
+
+    async function requestWalletSignature() {
+        var message = SIGN_PREFIX + Date.now();
+
+        if (hasEthers()) {
+            var provider = new ethers.BrowserProvider(window.ethereum);
+            var signer = await provider.getSigner();
+            var address = await signer.getAddress();
+            var signature = await signer.signMessage(message);
+            return { address: address, signature: signature };
+        }
+
+        var accounts = await ethereumRequest('eth_requestAccounts');
+        var address = accounts && accounts[0];
+        if (!address) throw new Error('No accounts');
+        var signature = await ethereumRequest('personal_sign', [message, address]);
+        return { address: address, signature: signature };
     }
 
     // ============================================
@@ -92,7 +163,8 @@ var WalletAuth = (function () {
         if (isConnecting) return;
 
         // Check for MetaMask
-        if (!hasEthereum()) {
+        var provider = getEthereumProvider();
+        if (!provider || !canRequest(provider)) {
             showWalletToast('MetaMask not detected. Please install the MetaMask extension.', 'error');
             return;
         }
@@ -101,16 +173,10 @@ var WalletAuth = (function () {
         showConnecting();
 
         try {
-            // Use ethers.js BrowserProvider (v6)
-            const provider = new ethers.BrowserProvider(window.ethereum);
-
-            // Request account access
-            const signer = await provider.getSigner();
-            const address = await signer.getAddress();
-
-            // Sign a message (free, no gas)
-            const message = SIGN_PREFIX + Date.now();
-            const signature = await signer.signMessage(message);
+            // Request account access + signature
+            var result = await requestWalletSignature();
+            var address = result.address;
+            var signature = result.signature;
 
             if (!signature) {
                 throw new Error('Signature rejected');
@@ -163,7 +229,7 @@ var WalletAuth = (function () {
 
         try {
             // Silently check if the account is still available
-            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            const accounts = await ethereumRequest('eth_accounts');
 
             if (accounts && accounts.length > 0) {
                 // Find matching address
@@ -196,9 +262,10 @@ var WalletAuth = (function () {
     // ============================================
 
     function listenForAccountChanges() {
-        if (!hasEthereum()) return;
+        var provider = getEthereumProvider();
+        if (!provider || !provider.on) return;
 
-        window.ethereum.on('accountsChanged', function (accounts) {
+        provider.on('accountsChanged', function (accounts) {
             if (accounts.length === 0) {
                 // User disconnected from MetaMask
                 disconnect();
@@ -211,7 +278,7 @@ var WalletAuth = (function () {
             }
         });
 
-        window.ethereum.on('chainChanged', function () {
+        provider.on('chainChanged', function () {
             // Reload on chain change as recommended by MetaMask
             window.location.reload();
         });
@@ -296,7 +363,8 @@ var WalletAuth = (function () {
             setupWalletBtn.addEventListener('click', async function () {
                 if (isConnecting) return;
 
-                if (!hasEthereum()) {
+                var provider = getEthereumProvider();
+                if (!provider || !canRequest(provider)) {
                     if (setupWalletStatus) {
                         setupWalletStatus.innerHTML =
                             '<span style="color:#ff5566">⚠️ MetaMask not detected. Please install the ' +
@@ -317,12 +385,9 @@ var WalletAuth = (function () {
                 isConnecting = true;
 
                 try {
-                    var provider = new ethers.BrowserProvider(window.ethereum);
-                    var signer = await provider.getSigner();
-                    var address = await signer.getAddress();
-
-                    var message = SIGN_PREFIX + Date.now();
-                    var signature = await signer.signMessage(message);
+                    var result = await requestWalletSignature();
+                    var address = result.address;
+                    var signature = result.signature;
 
                     if (!signature) throw new Error('Signature rejected');
 
