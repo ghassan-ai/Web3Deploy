@@ -39,12 +39,11 @@ var WalletAuth = (function () {
 
     function getEthereumProvider() {
         if (typeof window.ethereum !== 'undefined') return window.ethereum;
-        if (typeof window.web3 !== 'undefined' && window.web3.currentProvider) return window.web3.currentProvider;
         return null;
     }
 
     function canRequest(provider) {
-        return !!(provider && (provider.request || provider.sendAsync || provider.send));
+        return !!(provider && provider.request);
     }
 
     function ethereumRequest(method, params) {
@@ -55,35 +54,7 @@ var WalletAuth = (function () {
             return provider.request({ method: method, params: params || [] });
         }
 
-        return new Promise(function (resolve, reject) {
-            var payload = { id: Date.now(), jsonrpc: '2.0', method: method, params: params || [] };
-
-            if (provider.sendAsync) {
-                provider.sendAsync(payload, function (err, res) {
-                    if (err) return reject(err);
-                    resolve(res && res.result);
-                });
-                return;
-            }
-
-            if (provider.send) {
-                try {
-                    var res = provider.send(payload, function (err, resAsync) {
-                        if (err) return reject(err);
-                        resolve(resAsync && resAsync.result);
-                    });
-                    if (res && typeof res.then === 'function') {
-                        res.then(function (r) { resolve(r && r.result !== undefined ? r.result : r); }).catch(reject);
-                        return;
-                    }
-                    if (res && res.result !== undefined) return resolve(res.result);
-                } catch (err) {
-                    return reject(err);
-                }
-            }
-
-            reject(new Error('Ethereum provider does not support request'));
-        });
+        return Promise.reject(new Error('Ethereum provider does not support request'));
     }
 
     function hasEthers() {

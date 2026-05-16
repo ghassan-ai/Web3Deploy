@@ -21,25 +21,18 @@
                 'Authorization': 'Bearer ' + key
             })
         },
-        filebase: {
-            name: 'Filebase',
-            icon: '🗄️',
-            verifyUrl: null, // S3-compatible — no simple REST verify
-            hint: 'Get your access token from <a href="https://console.filebase.com/" target="_blank" rel="noopener">Filebase Console</a>',
-            buildHeaders: null
-        },
-        lighthouse: {
-            name: 'Lighthouse',
-            icon: '🏗️',
-            verifyUrl: null, // No simple test endpoint
-            hint: 'Get your API key from <a href="https://files.lighthouse.storage/" target="_blank" rel="noopener">Lighthouse Dashboard</a>',
-            buildHeaders: null
-        },
         arweave: {
             name: 'Arweave',
-            icon: '⛓️',
+            icon: '🌿',
             verifyUrl: null,
-            hint: 'Get your wallet from <a href="https://arweave.app" target="_blank">arweave.app</a> → Export → Download JSON',
+            hint: 'Uses MetaMask to pay in ETH via Irys. <a href="https://metamask.io/download/" target="_blank" rel="noopener">Install MetaMask</a> → Connect wallet above → select Arweave to upload.',
+            buildHeaders: null
+        },
+        icp: {
+            name: 'ICP',
+            icon: '∞',
+            verifyUrl: null,
+            hint: 'Enter your ICP asset canister ID below. Deploy one with: <code>dfx deploy --network ic</code>. Auth via <a href="https://identity.ic0.app" target="_blank" rel="noopener">Internet Identity</a>.',
             buildHeaders: null
         }
     };
@@ -263,6 +256,10 @@
                 FileManager.init(getActiveKey);
                 FileManager.prefetchIndex();
             }
+
+            // ADDED — Initialize new providers
+            if (typeof ArweaveProvider !== 'undefined') ArweaveProvider.init();
+            if (typeof ICPProvider !== 'undefined') ICPProvider.init();
         }
 
         // -------------------------------------------
@@ -421,13 +418,39 @@
                 providerHint.innerHTML = config.hint;
             }
             if (provider === 'arweave') {
-                apiKeyInput.type = 'file';
-                apiKeyInput.accept = '.json';
+                // Arweave now uses MetaMask/Irys — no wallet JSON file needed
+                // Keep the input hidden; show an info row instead
+                apiKeyInput.type = 'text';
+                apiKeyInput.value = 'Uses MetaMask — no API key required';
+                apiKeyInput.readOnly = true;
+                apiKeyInput.style.opacity = '0.5';
+                apiKeyInput.style.cursor = 'not-allowed';
                 toggleKeyVis.style.display = 'none';
+                var lblArw = document.querySelector('label[for="apiKeyInput"]');
+                if (lblArw) lblArw.textContent = 'Wallet Configured';
+            } else if (provider === 'icp') {
+                // ICP: ask for canister ID
+                apiKeyInput.type = 'text';
+                apiKeyInput.readOnly = false;
+                apiKeyInput.style.opacity = '1';
+                apiKeyInput.style.cursor = '';
+                apiKeyInput.removeAttribute('accept');
+                apiKeyInput.placeholder = 'Enter your canister ID (e.g. rrkah-fqaaa-aaaaa-aaaaq-cai)';
+                apiKeyInput.value = localStorage.getItem('web3deploy_icp_canister_id') || '';
+                toggleKeyVis.style.display = 'none';
+                // Update label
+                var lblIcp = document.querySelector('label[for="apiKeyInput"]');
+                if (lblIcp) lblIcp.textContent = 'Canister ID';
             } else {
                 apiKeyInput.type = 'password';
+                apiKeyInput.readOnly = false;
+                apiKeyInput.style.opacity = '1';
+                apiKeyInput.style.cursor = '';
                 apiKeyInput.removeAttribute('accept');
+                apiKeyInput.placeholder = 'Paste your API key here…';
                 toggleKeyVis.style.display = 'block';
+                var lblDefault = document.querySelector('label[for="apiKeyInput"]');
+                if (lblDefault) lblDefault.textContent = 'API Key / JWT Token';
             }
         }
 
@@ -474,12 +497,8 @@
             if (provider === 'pinata') {
                 return await verifyPinataKey(apiKey);
             }
-
-            // For Filebase and Lighthouse, we accept the key if non-empty
-            // (no simple REST endpoint to verify without complex S3 signing)
-            if (apiKey.trim().length >= 10) {
-                return true;
-            }
+            // Pinata is the only IPFS provider that needs key verification.
+            // Arweave and ICP don't reach this code path (handled earlier).
             return false;
         }
 
@@ -491,54 +510,72 @@
 
             const provider = providerSelect.value;
 
+            // ── Arweave via Irys (MetaMask — no wallet file) ──
             if (provider === 'arweave') {
-                const file = apiKeyInput.files && apiKeyInput.files[0];
-                if (!file) {
-                    showMessage('Please select your Arweave wallet JSON file.', 'error');
+                // Register Arweave as a saved provider with a sentinel key
+                const keys = getSavedKeys();
+                let dupIdx = keys.findIndex(k => k.provider === 'arweave');
+
+                if (dupIdx === -1) {
+                    keys.push({
+                        provider: 'arweave',
+                        key:      'metamask_irys',
+                        verified: false,
+                        addedAt:  new Date().toISOString()
+                    });
+                    saveKeys(keys);
+                    setActiveIndex(keys.length - 1);
+                } else {
+                    setActiveIndex(dupIdx);
+                }
+
+                // Initialise ArweaveProvider (checks MetaMask)
+                if (typeof ArweaveProvider !== 'undefined') {
+                    ArweaveProvider.init();
+                }
+
+                showMessage('✓ Arweave (Irys) configured — MetaMask will be used for payments.', 'success');
+                setTimeout(() => { showDashboard(); }, 1000);
+                return;
+            }
+
+            // ── ICP (Internet Computer — canister ID) ──
+            if (provider === 'icp') {
+                const canisterId = apiKeyInput.value.trim();
+                if (!canisterId) {
+                    showMessage('Please enter your ICP canister ID.', 'error');
+                    apiKeyInput.focus();
                     return;
                 }
 
-                verifyBtn.classList.add('loading');
-                verifyBtn.disabled = true;
-                clearMessage();
+                // Save canister ID
+                localStorage.setItem('web3deploy_icp_canister_id', canisterId);
+                if (typeof ICPProvider !== 'undefined') {
+                    ICPProvider.setCanisterId(canisterId);
+                    ICPProvider.init();
+                }
 
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    const walletStr = evt.target.result;
-                    try {
-                        JSON.parse(walletStr); // verify it's valid JSON
-                        localStorage.setItem('arweave_wallet', walletStr);
+                const keys = getSavedKeys();
+                let dupIdx = keys.findIndex(k => k.provider === 'icp');
 
-                        const keys = getSavedKeys();
-                        let duplicateIdx = keys.findIndex(k => k.provider === provider && k.key === 'arweave_wallet');
-                        
-                        if (duplicateIdx === -1) {
-                            keys.push({
-                                provider: provider,
-                                key: 'arweave_wallet',
-                                verified: true,
-                                addedAt: new Date().toISOString()
-                            });
-                            saveKeys(keys);
-                            setActiveIndex(keys.length - 1);
-                        } else {
-                            setActiveIndex(duplicateIdx);
-                        }
+                if (dupIdx === -1) {
+                    keys.push({
+                        provider: 'icp',
+                        key:      canisterId,
+                        verified: false,
+                        addedAt:  new Date().toISOString()
+                    });
+                    saveKeys(keys);
+                    setActiveIndex(keys.length - 1);
+                } else {
+                    // Update canister ID in saved key
+                    keys[dupIdx].key = canisterId;
+                    saveKeys(keys);
+                    setActiveIndex(dupIdx);
+                }
 
-                        showMessage('✓ Arweave wallet updated successfully!', 'success');
-                        setTimeout(() => { showDashboard(); }, 1000);
-                    } catch (err) {
-                        showMessage('Invalid wallet file. Must be a valid JSON format.', 'error');
-                        verifyBtn.classList.remove('loading');
-                        verifyBtn.disabled = false;
-                    }
-                };
-                reader.onerror = function() {
-                    showMessage('Failed to read wallet file. Try again.', 'error');
-                    verifyBtn.classList.remove('loading');
-                    verifyBtn.disabled = false;
-                };
-                reader.readAsText(file);
+                showMessage('✓ ICP canister saved. You\'ll authenticate with Internet Identity on first upload.', 'success');
+                setTimeout(() => { showDashboard(); }, 1000);
                 return;
             }
 
@@ -857,6 +894,50 @@
             showState(stateDropZone);
         });
 
+        // --- Helpers: file validation ---
+        var MAX_FILE_BYTES = 100 * 1024 * 1024; // 100 MB
+
+        function sanitizeFileName(name) {
+            return String(name)
+                .replace(/\s+/g, '-')
+                .replace(/[^a-zA-Z0-9._-]/g, '')
+                .substring(0, 200);
+        }
+
+        function validateFiles(files) {
+            for (var i = 0; i < files.length; i++) {
+                if (files[i].file.size > MAX_FILE_BYTES) {
+                    return 'File "' + files[i].file.name + '" exceeds the 100 MB limit.';
+                }
+                if (files[i].file.size === 0) {
+                    return 'File "' + files[i].file.name + '" is empty.';
+                }
+            }
+            return null;
+        }
+
+        function setUploading(isUploading) {
+            uploadBtn.disabled = isUploading;
+            if (isUploading) {
+                uploadBtn.classList.add('loading');
+            } else {
+                uploadBtn.classList.remove('loading');
+            }
+        }
+
+        function showIndeterminateProgress(providerName) {
+            progressFill.style.width = '100%';
+            progressFill.classList.add('indeterminate');
+            progressPercent.textContent = '';
+            progressSize.textContent = 'Uploading to ' + providerName + '...';
+            progressEta.textContent = 'Please wait';
+        }
+
+        function resetProgress() {
+            progressFill.classList.remove('indeterminate');
+            progressFill.style.width = '0%';
+        }
+
         // --- Upload ---
         uploadBtn.addEventListener('click', function () {
             startUpload();
@@ -868,12 +949,22 @@
             var active = getActiveKey();
             if (!active) return;
 
+            // --- File size validation ---
+            var validationError = validateFiles(selectedFiles);
+            if (validationError) {
+                showState(stateError);
+                errorTitle.textContent = 'File Too Large';
+                errorMessage.textContent = validationError;
+                return;
+            }
+
             // Sync pin name
             var pinName = (pinNameInput2 ? pinNameInput2.value : pinNameInput.value) || '';
 
-            // Show uploading state
+            // Show uploading state & disable button
             showState(stateUploading);
-            progressFill.style.width = '0%';
+            setUploading(true);
+            resetProgress();
             progressPercent.textContent = '0 %';
             progressSize.textContent = '0 / 0';
             progressEta.textContent = 'Estimating…';
@@ -881,28 +972,51 @@
             abortController = new AbortController();
 
             try {
-                var result = await PinataAPI.upload(selectedFiles, {
-                    apiKey: active.key,
-                    pinName: pinName.trim(),
-                    abortController: abortController,
-                    onProgress: function (p) {
-                        progressFill.style.width = p.percent + '%';
-                        progressPercent.textContent = p.percent + ' %';
-                        progressSize.textContent = fmtBytes(p.loaded) + ' / ' + fmtBytes(p.total);
-                        progressEta.textContent = fmtTime(p.eta);
-                    }
-                });
+                var result;
+
+                // Route upload to the correct provider
+                if (active.provider === 'arweave') {
+                    // Arweave: upload via ArweaveProvider (MetaMask/Irys)
+                    if (typeof ArweaveProvider === 'undefined') throw { type: 'config', message: 'ArweaveProvider not loaded.' };
+                    showIndeterminateProgress('Arweave');
+                    var arRes = await ArweaveProvider.upload(selectedFiles[0].file);
+                    if (!arRes.success) throw { type: 'upload', message: arRes.error };
+                    result = { cid: arRes.txId, gatewayUrl: arRes.url, size: selectedFiles[0].file.size };
+
+                } else if (active.provider === 'icp') {
+                    // ICP: upload via ICPProvider (Internet Identity)
+                    if (typeof ICPProvider === 'undefined') throw { type: 'config', message: 'ICPProvider not loaded.' };
+                    showIndeterminateProgress('ICP');
+                    var icpRes = await ICPProvider.upload(selectedFiles[0].file);
+                    if (!icpRes.success) throw { type: 'upload', message: icpRes.error };
+                    result = { cid: icpRes.canisterId, gatewayUrl: icpRes.url, size: selectedFiles[0].file.size };
+
+                } else {
+                    // Pinata (only remaining IPFS provider)
+                    result = await PinataAPI.upload(selectedFiles, {
+                        apiKey: active.key,
+                        pinName: pinName.trim(),
+                        abortController: abortController,
+                        onProgress: function (p) {
+                            progressFill.style.width = p.percent + '%';
+                            progressPercent.textContent = p.percent + ' %';
+                            progressSize.textContent = fmtBytes(p.loaded) + ' / ' + fmtBytes(p.total);
+                            progressEta.textContent = fmtTime(p.eta);
+                        }
+                    });
+                }
 
                 // Success
+                resetProgress();
                 showState(stateSuccess);
                 resultCid.textContent = result.cid;
                 resultLink.textContent = result.gatewayUrl;
                 resultLink.href = result.gatewayUrl;
                 openLinkBtn.href = result.gatewayUrl;
 
-                // --- Handle Arweave Backup ---
-                var toggles = document.querySelectorAll('#arweaveBackupToggle');
-                var hints = document.querySelectorAll('#arweaveWalletHint');
+                // --- Handle Arweave Backup (only for Pinata uploads) ---
+                var toggles = document.querySelectorAll('[id^="arweaveBackupToggle"]');
+                var hints = document.querySelectorAll('[id^="arweaveWalletHint"]');
                 var isArweaveChecked = false;
                 toggles.forEach(function(t) { if (t.checked) isArweaveChecked = true; });
 
@@ -910,9 +1024,12 @@
                 var arweaveStatus = document.getElementById('arweaveStatus');
                 var arweaveLink = document.getElementById('arweaveLink');
 
-                if (isArweaveChecked) {
-                    var walletStr = localStorage.getItem('arweave_wallet');
-                    if (walletStr) {
+                if (isArweaveChecked && active.provider === 'pinata') {
+                    // Check if ArweaveProvider is configured (exists in saved keys)
+                    var savedKeys = getSavedKeys();
+                    var hasArweaveKey = savedKeys.some(function(k) { return k.provider === 'arweave'; });
+
+                    if (hasArweaveKey && typeof ArweaveProvider !== 'undefined') {
                         if (arweaveResultField) arweaveResultField.style.display = 'block';
                         if (arweaveStatus) {
                             arweaveStatus.textContent = 'Uploading...';
@@ -920,29 +1037,32 @@
                         }
                         if (arweaveLink) arweaveLink.style.display = 'none';
 
-                        var fileToUpload = selectedFiles[0].file; // Use first selected file for Arweave
-                        if (typeof StorageProviders !== 'undefined' && StorageProviders.uploadArweave) {
-                            StorageProviders.uploadArweave(fileToUpload)
-                                .then(function(arRes) {
+                        var fileToUpload = selectedFiles[0].file;
+                        ArweaveProvider.upload(fileToUpload)
+                            .then(function(backupRes) {
+                                if (backupRes.success) {
                                     if (arweaveStatus) {
                                         arweaveStatus.textContent = '✓ Permanently Archived';
                                         arweaveStatus.style.color = '#00ff88';
                                     }
                                     if (arweaveLink) {
-                                        arweaveLink.href = arRes.url;
+                                        arweaveLink.href = backupRes.url;
                                         arweaveLink.style.display = 'inline-flex';
                                     }
-                                })
-                                .catch(function(err) {
-                                    console.warn('Arweave backup failed:', err);
+                                } else {
                                     if (arweaveStatus) {
-                                        arweaveStatus.textContent = '⚠️ Backup failed';
+                                        arweaveStatus.textContent = '⚠️ Backup failed: ' + (backupRes.error || 'Unknown error');
                                         arweaveStatus.style.color = '#ff5566';
                                     }
-                                });
-                        } else {
-                            console.warn('Arweave provider not found.');
-                        }
+                                }
+                            })
+                            .catch(function(err) {
+                                console.warn('Arweave backup failed:', err);
+                                if (arweaveStatus) {
+                                    arweaveStatus.textContent = '⚠️ Backup failed';
+                                    arweaveStatus.style.color = '#ff5566';
+                                }
+                            });
                     } else {
                         hints.forEach(function(h) { h.style.display = 'block'; });
                         toggles.forEach(function(t) { t.checked = false; });
@@ -953,8 +1073,10 @@
                     hints.forEach(function(h) { h.style.display = 'none'; });
                 }
 
-                // --- Persist to IPFS index (if wallet connected) ---
-                if (typeof IpfsIndex !== 'undefined' && typeof WalletAuth !== 'undefined' && WalletAuth.isConnected()) {
+                // --- Persist to IPFS index (Pinata only — Arweave/ICP save to localStorage in their own modules) ---
+                if (active.provider === 'pinata' &&
+                    typeof IpfsIndex !== 'undefined' &&
+                    typeof WalletAuth !== 'undefined' && WalletAuth.isConnected()) {
                     var uploadName = pinName || (selectedFiles.length === 1 ? selectedFiles[0].file.name : 'upload');
                     var totalSize = 0;
                     for (var s = 0; s < selectedFiles.length; s++) totalSize += selectedFiles[s].file.size;
@@ -983,6 +1105,7 @@
             } catch (err) {
                 if (err && err.type === 'abort') return; // user cancelled
 
+                resetProgress();
                 showState(stateError);
                 if (err && err.type === 'auth') {
                     errorTitle.textContent = 'API Key Expired';
@@ -996,6 +1119,7 @@
                 }
             }
 
+            setUploading(false);
             abortController = null;
         }
 

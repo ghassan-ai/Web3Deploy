@@ -31,8 +31,39 @@ function loadDomains(options){if(typeof WalletAuth!=='undefined'&&WalletAuth.isC
 function populateCids(){
 var key=getActiveKey();if(!key)return;
 resolveAdapter();
+
+// Build option list from localStorage files (includes arweave + icp)
+var lsRaw=localStorage.getItem('web3deploy_files');
+var lsFiles=[];
+try{lsFiles=lsRaw?JSON.parse(lsRaw):[];}catch(e){lsFiles=[];}
+
+var provider=key.provider;
+if(provider==='arweave'||provider==='icp'){
+  // These providers don't have a pin list, use localStorage files
+  els.cidInput.innerHTML='<option value="">Select a file...</option>';
+  var provFiles=lsFiles.filter(function(f){return f.provider===provider;});
+  if(provFiles.length===0){
+    els.cidInput.innerHTML='<option value="">No files uploaded yet</option>';
+  } else {
+    provFiles.forEach(function(f){
+      var opt=document.createElement('option');
+      opt.value=f.txId||f.url||'';
+      opt.textContent=(f.name||'Unnamed')+' ('+fmtDateShort(f.date)+')';
+      opt.setAttribute('data-url',f.url||'');
+      opt.setAttribute('data-provider',f.provider||provider);
+      opt.setAttribute('data-canister',f.canisterId||'');
+      els.cidInput.appendChild(opt);
+    });
+  }
+  return;
+}
+
+// Pinata — use listPins
 var listFn=providerAdapter&&providerAdapter.listPins?providerAdapter.listPins:(typeof PinataAPI!=='undefined'&&PinataAPI.listPins?PinataAPI.listPins:null);
-if(!listFn){els.cidInput.innerHTML='<option value="">Unable to load pins</option>';return;}
+if(!listFn){
+  els.cidInput.innerHTML='<option value="">Unable to load pins</option>';
+  return;
+}
 listFn({apiKey:key.key,sort:'DESC',limit:50}).then(function(data){
 els.cidInput.innerHTML='<option value="">Select a pinned site...</option>';
 (data.pins||[]).forEach(function(p){
@@ -41,23 +72,56 @@ els.cidInput.appendChild(opt);});}).catch(function(){
 els.cidInput.innerHTML='<option value="">Unable to load pins</option>';
 });}
 function truncCid(c){if(!c||c.length<16)return c;return c.slice(0,8)+'\u2026'+c.slice(-6);}
+function fmtDateShort(d){if(!d)return'';var dt=new Date(d);return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});}  
 function generateRecords(){
 var domain=els.domainInput.value.trim();
-var provider=els.providerSelect.value;
-var cid=els.cidInput.value;
+var dnsProvider=els.providerSelect.value;
+var cidOrRef=els.cidInput.value;
 if(!domain){alert('Please enter a domain name.');return;}
 var domainRegex = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/i;
 domain=domain.replace(/^https?:\/\//,'').replace(/\/$/,'');
 if(!domainRegex.test(domain)){alert('Please enter a valid domain name (e.g., example.com).');return;}
-if(!cid){alert('Please select a site CID.');return;}
+if(!cidOrRef){alert('Please select a file/site.');return;}
+
+// Determine storage provider from active key
+var key=getActiveKey&&getActiveKey();
+var storageProvider=key?key.provider:'pinata';
+
+// Build the selected option to get extra data attributes
+var selectedOpt=els.cidInput.options[els.cidInput.selectedIndex];
+var canisterId=selectedOpt?selectedOpt.getAttribute('data-canister'):''; 
+
 var randStr = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 currentChallenge = 'web3-deploy-verification=' + randStr;
-var pInfo=PROVIDERS[provider]||PROVIDERS.other;
+var pInfo=PROVIDERS[dnsProvider]||PROVIDERS.other;
 els.providerInstructions.textContent=pInfo.instructions;
-var records=[
-{type:'TXT',host:'@',value:currentChallenge,ttl:'Auto',note:'Proves ownership of this domain'},
-{type:'TXT',host:'_dnslink',value:'dnslink=/ipfs/'+cid,ttl:'Auto',note:'Links your domain to the IPFS content'}
-];
+
+var records;
+
+if(storageProvider==='arweave'){
+  // Arweave permanent storage — dnslink points to ar:// URL
+  var txId=cidOrRef.replace('https://gateway.irys.xyz/','').replace('https://arweave.net/','');
+  records=[
+    {type:'TXT',host:'@',value:currentChallenge,ttl:'Auto',note:'Proves ownership of this domain'},
+    {type:'TXT',host:'_dnslink',value:'dnslink=/ar/'+txId,ttl:'Auto',note:'Links domain to permanent Arweave content'}
+  ];
+} else if(storageProvider==='icp'){
+  // ICP asset canister — CNAME to canister URL
+  var cId=canisterId||localStorage.getItem('web3deploy_icp_canister_id')||cidOrRef;
+  records=[
+    {type:'TXT',host:'@',value:currentChallenge,ttl:'Auto',note:'Proves ownership of this domain'},
+    {type:'CNAME',host:'www',value:cId+'.icp0.io',ttl:'Auto',note:'Points www subdomain to your ICP canister'},
+    {type:'TXT',host:'_dnslink',value:'dnslink=/ipns/'+cId+'.icp0.io',ttl:'Auto',note:'Links domain to ICP canister (optional)'}
+  ];
+} else {
+  // IPFS providers (Pinata / Filebase / Lighthouse)
+  var cid=cidOrRef;
+  records=[
+    {type:'TXT',host:'@',value:currentChallenge,ttl:'Auto',note:'Proves ownership of this domain'},
+    {type:'TXT',host:'_dnslink',value:'dnslink=/ipfs/'+cid,ttl:'Auto',note:'Links your domain to IPFS content'}
+  ];
+}
+
 els.recordsList.innerHTML='';
 records.forEach(function(r){
 var box=document.createElement('div');box.className='dm-record-box';
@@ -69,10 +133,26 @@ els.recordsCard.scrollIntoView({behavior:'smooth',block:'start'});}
 function checkDns(){
 var domain=els.domainInput.value.trim().replace(/^https?:\/\//,'').replace(/\/$/,'');
 if(!domain || !currentChallenge)return;
-els.checkStatus.innerHTML='<div class="dm-status dm-status-pending"><span class="dm-status-icon">⏳</span><span>جاري فحص سجلات DNS...</span></div>';
+els.checkStatus.innerHTML='<div class="dm-status dm-status-pending"><span class="dm-status-icon">⏳</span><span>Checking DNS records...</span></div>';
 els.checkBtn.disabled=true;
 if(els.saveBtn) { els.saveBtn.disabled=true; }
-var expectedDnslink = 'dnslink=/ipfs/' + els.cidInput.value;
+
+// Determine what dnslink value to expect based on storage provider
+var key=getActiveKey&&getActiveKey();
+var storageProvider=key?key.provider:'pinata';
+var cidOrRef=els.cidInput.value;
+var expectedDnslink;
+if(storageProvider==='arweave'){
+  var txId=cidOrRef.replace('https://gateway.irys.xyz/','').replace('https://arweave.net/','');
+  expectedDnslink='dnslink=/ar/'+txId;
+}else if(storageProvider==='icp'){
+  var selectedOpt=els.cidInput.options[els.cidInput.selectedIndex];
+  var cId=(selectedOpt&&selectedOpt.getAttribute('data-canister'))||localStorage.getItem('web3deploy_icp_canister_id')||cidOrRef;
+  expectedDnslink='dnslink=/ipns/'+cId+'.icp0.io';
+}else{
+  expectedDnslink='dnslink=/ipfs/'+cidOrRef;
+}
+
 Promise.all([
 fetch('https://dns.google/resolve?name='+domain+'&type=TXT').then(function(r){return r.json();}),
 fetch('https://dns.google/resolve?name=_dnslink.'+domain+'&type=TXT').then(function(r){return r.json();})
@@ -88,18 +168,18 @@ if(dnslinkData.Answer&&dnslinkData.Answer.length>0){
 hasDnslink=dnslinkData.Answer.some(function(a){return a.data&&a.data.replace(/\"/g,'')===expectedDnslink;});
 }
 if(hasVerification&&hasDnslink){
-els.checkStatus.innerHTML='<div class="dm-status dm-status-ok"><span class="dm-status-icon">✅</span><div><strong>تم التحقق بنجاح</strong><p>Domain ownership verified and linked to IPFS.</p></div></div>';
+els.checkStatus.innerHTML='<div class="dm-status dm-status-ok"><span class="dm-status-icon">✅</span><div><strong>Verified!</strong><p>Domain ownership confirmed and linked to your content.</p></div></div>';
 if(els.saveBtn) { els.saveBtn.disabled=false;els.saveBtn.innerHTML='💾 Save Domain Link'; }
 }else if(!hasVerification&&!hasDnslink){
-els.checkStatus.innerHTML='<div class="dm-status dm-status-warn"><span class="dm-status-icon">⏳</span><div><strong>انتظار انتشار DNS (24-48 ساعة)</strong><p>Verification and _dnslink records not found yet. Propagation can take time.</p></div></div>';
+els.checkStatus.innerHTML='<div class="dm-status dm-status-warn"><span class="dm-status-icon">⏳</span><div><strong>Waiting for DNS propagation (24–48h)</strong><p>Records not found yet. DNS changes can take time.</p></div></div>';
 }else if(!hasVerification){
-els.checkStatus.innerHTML='<div class="dm-status dm-status-error"><span class="dm-status-icon">❌</span><div><strong>التحقق مفقود</strong><p>TXT record for verification not found on root domain (@).</p></div></div>';
+els.checkStatus.innerHTML='<div class="dm-status dm-status-error"><span class="dm-status-icon">❌</span><div><strong>Verification TXT missing</strong><p>Add the TXT record to the root domain (@).</p></div></div>';
 }else{
-els.checkStatus.innerHTML='<div class="dm-status dm-status-error"><span class="dm-status-icon">❌</span><div><strong>رابط IPFS مفقود</strong><p>_dnslink TXT record not found or incorrect.</p></div></div>';
+els.checkStatus.innerHTML='<div class="dm-status dm-status-error"><span class="dm-status-icon">❌</span><div><strong>Content link missing</strong><p>_dnslink TXT record not found or incorrect.</p></div></div>';
 }
 }).catch(function(){
 els.checkBtn.disabled=false;
-els.checkStatus.innerHTML='<div class="dm-status dm-status-warn"><span class="dm-status-icon">⏳</span><div><strong>خطأ في الاتصال</strong><p>Could not query DNS. Try again later.</p></div></div>';});}
+els.checkStatus.innerHTML='<div class="dm-status dm-status-warn"><span class="dm-status-icon">⏳</span><div><strong>DNS lookup failed</strong><p>Could not reach DNS server. Try again later.</p></div></div>';});}
 function saveDomain(){
 var domain=els.domainInput.value.trim().replace(/^https?:\/\//,'').replace(/\/$/,'');
 var cid=els.cidInput.value;var provider=els.providerSelect.value;
@@ -107,7 +187,9 @@ if(!domain||!cid)return;
 var now=new Date().toISOString();
 var domains=getDomains();
 var existing=domains.find(function(d){return(d.domain||'').toLowerCase()===domain.toLowerCase();});
-var entry={domain:domain,cid:cid,provider:provider,status:existing&&existing.status?existing.status:'pending',dateLinked:existing&&existing.dateLinked?existing.dateLinked:now,lastChecked:now};
+var key=getActiveKey&&getActiveKey();
+var storageProvider=key?key.provider:'pinata';
+var entry={domain:domain,cid:cid,provider:provider,storageProvider:storageProvider,status:existing&&existing.status?existing.status:'pending',dateLinked:existing&&existing.dateLinked?existing.dateLinked:now,lastChecked:now};
 upsertDomain(domains,entry);
 saveDomains(domains);renderTable();
 persistDomain(entry);
@@ -120,7 +202,7 @@ els.tableBody.innerHTML='';
 domains.forEach(function(d,i){
 var tr=document.createElement('tr');
 var statusClass=d.status==='connected'?'ok':d.status==='error'?'error':'pending';
-var statusLabel=d.status==='connected'?'\u2705 \u0645\u062a\u0635\u0644':d.status==='error'?'\u274c \u062e\u0637\u0623':'\u23f3 \u0642\u064a\u062f \u0627\u0644\u0627\u0646\u062a\u0638\u0627\u0631';
+var statusLabel=d.status==='connected'?'✅ Connected':d.status==='error'?'❌ Error':'⏳ Pending';
 tr.innerHTML='<td><div class="dm-domain-name">\ud83c\udf10 '+d.domain+'</div></td><td><span class="dm-status-badge dm-status-badge-'+statusClass+'">'+statusLabel+'</span></td><td><code class="dm-linked-cid" title="'+d.cid+'">'+truncCid(d.cid)+'</code></td><td>'+fmtDate(d.lastChecked||d.dateLinked)+'</td><td><div class="fm-td-actions"><button class="btn-icon-sm dm-act" data-act="recheck" data-idx="'+i+'" title="Re-check">\ud83d\udd0d</button><button class="btn-icon-sm dm-act" data-act="update" data-idx="'+i+'" title="Update CID">\ud83d\udd04</button><button class="btn-icon-sm dm-act fm-btn-danger" data-act="unlink" data-idx="'+i+'" title="Unlink">\u2715</button></div></td>';
 els.tableBody.appendChild(tr);});}
 function fmtDate(d){if(!d)return'\u2014';var dt=new Date(d);return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
@@ -135,7 +217,16 @@ persistDomain(d);
 function showUpdateModal(idx){
 var domains=getDomains();var d=domains[idx];if(!d)return;
 if(els.newCid)els.newCid.textContent=d.cid;
-if(els.newTxtValue)els.newTxtValue.textContent='dnslink=/ipfs/'+d.cid;
+// Show the correct dnslink format for the domain's storage provider
+var dnslinkVal;
+if(d.storageProvider==='arweave'){
+  dnslinkVal='dnslink=/ar/'+d.cid;
+}else if(d.storageProvider==='icp'){
+  dnslinkVal='dnslink=/ipns/'+d.cid+'.icp0.io';
+}else{
+  dnslinkVal='dnslink=/ipfs/'+d.cid;
+}
+if(els.newTxtValue)els.newTxtValue.textContent=dnslinkVal;
 if(els.updateOverlay)els.updateOverlay.classList.add('open');}
 function openUnlink(idx){
 var domains=getDomains();var d=domains[idx];if(!d)return;

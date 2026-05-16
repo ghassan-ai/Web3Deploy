@@ -11,7 +11,7 @@ var FileManager = (function () {
     var els = {};
     function init(getKeyFn) {
         if (fmInitialized) return; fmInitialized = true; getActiveKey = getKeyFn;
-        els = { storageText: document.getElementById('storageText'), storageFill: document.getElementById('storageFill'), storageWarning: document.getElementById('storageWarning'), closeStorageWarn: document.getElementById('closeStorageWarn'), fmSearch: document.getElementById('fmSearch'), fmSort: document.getElementById('fmSort'), fmSyncBtn: document.getElementById('fmSyncBtn'), fmSyncStatus: document.getElementById('fmSyncStatus'), fmGrid: document.getElementById('fmGrid'), fmListWrap: document.getElementById('fmListWrap'), fmListBody: document.getElementById('fmListBody'), fmLoading: document.getElementById('fmLoading'), fmEmpty: document.getElementById('fmEmpty'), fmNoResults: document.getElementById('fmNoResults'), fmBulkBar: document.getElementById('fmBulkBar'), fmBulkCount: document.getElementById('fmBulkCount'), fmSelectAll: document.getElementById('fmSelectAll'), fmSelectAllList: document.getElementById('fmSelectAllList'), fmGoUpload: document.getElementById('fmGoUpload'), versionOverlay: document.getElementById('versionOverlay'), versionPanel: document.getElementById('versionPanel'), versionList: document.getElementById('versionList'), vpSiteName: document.getElementById('vpSiteName'), vpStatus: document.getElementById('vpStatus'), closeVersionPanel: document.getElementById('closeVersionPanel'), vpCompareBtn: document.getElementById('vpCompareBtn'), vpCompareBar: document.getElementById('vpCompareBar'), vpCompareCount: document.getElementById('vpCompareCount'), vpCancelCompare: document.getElementById('vpCancelCompare'), unpinOverlay: document.getElementById('unpinOverlay'), unpinCid: document.getElementById('unpinCid'), confirmUnpin: document.getElementById('confirmUnpin'), cancelUnpin: document.getElementById('cancelUnpin'), bulkUnpinOverlay: document.getElementById('bulkUnpinOverlay'), bulkCount: document.getElementById('bulkCount'), bulkCount2: document.getElementById('bulkCount2'), confirmBulkUnpin: document.getElementById('confirmBulkUnpin'), cancelBulkUnpin: document.getElementById('cancelBulkUnpin'), rollbackOverlay: document.getElementById('rollbackOverlay'), rollbackCid: document.getElementById('rollbackCid'), confirmRollback: document.getElementById('confirmRollback'), cancelRollback: document.getElementById('cancelRollback'), compareOverlay: document.getElementById('compareOverlay'), compareVersionsRow: document.getElementById('compareVersionsRow'), compareStats: document.getElementById('compareStats'), closeCompare: document.getElementById('closeCompare') };
+        els = { storageText: document.getElementById('storageText'), storageFill: document.getElementById('storageFill'), storageWarning: document.getElementById('storageWarning'), closeStorageWarn: document.getElementById('closeStorageWarn'), fmSearch: document.getElementById('fmSearch'), fmSort: document.getElementById('fmSort'), fmSyncBtn: document.getElementById('fmSyncBtn'), fmSyncStatus: document.getElementById('fmSyncStatus'), fmGrid: document.getElementById('fmGrid'), fmListWrap: document.getElementById('fmListWrap'), fmListBody: document.getElementById('fmListBody'), fmLoading: document.getElementById('fmLoading'), fmEmpty: document.getElementById('fmEmpty'), fmNoResults: document.getElementById('fmNoResults'), fmBulkBar: document.getElementById('fmBulkBar'), fmBulkCount: document.getElementById('fmBulkCount'), fmSelectAll: document.getElementById('fmSelectAll'), fmSelectAllList: document.getElementById('fmSelectAllList'), fmGoUpload: document.getElementById('fmGoUpload'), versionOverlay: document.getElementById('versionOverlay'), versionPanel: document.getElementById('versionPanel'), versionList: document.getElementById('versionList'), vpSiteName: document.getElementById('vpSiteName'), vpStatus: document.getElementById('vpStatus'), closeVersionPanel: document.getElementById('closeVersionPanel'), vpCompareBtn: document.getElementById('vpCompareBtn'), vpCompareBar: document.getElementById('vpCompareBar'), vpCompareCount: document.getElementById('vpCompareCount'), vpCancelCompare: document.getElementById('vpCancelCompare'), unpinOverlay: document.getElementById('unpinOverlay'), unpinCid: document.getElementById('unpinCid'), confirmUnpin: document.getElementById('confirmUnpin'), cancelUnpin: document.getElementById('cancelUnpin'), bulkUnpinOverlay: document.getElementById('bulkUnpinOverlay'), bulkCount: document.getElementById('bulkCount'), confirmBulkUnpin: document.getElementById('confirmBulkUnpin'), cancelBulkUnpin: document.getElementById('cancelBulkUnpin'), rollbackOverlay: document.getElementById('rollbackOverlay'), rollbackCid: document.getElementById('rollbackCid'), confirmRollback: document.getElementById('confirmRollback'), cancelRollback: document.getElementById('cancelRollback'), compareOverlay: document.getElementById('compareOverlay'), compareVersionsRow: document.getElementById('compareVersionsRow'), compareStats: document.getElementById('compareStats'), closeCompare: document.getElementById('closeCompare') };
         bindEvents(); setView(currentView);
         if (typeof WalletAuth !== 'undefined' && WalletAuth.isConnected()) {
             updateSyncStatus(WalletAuth.getAddress());
@@ -39,9 +39,36 @@ var FileManager = (function () {
     function typeForPin(pin) { if (pin && pin.type) return pin.type; return typeFromName(pin && pin.name ? pin.name : ''); }
     function iconFor(pinOrName) { var t = typeof pinOrName === 'string' ? typeFromName(pinOrName) : typeForPin(pinOrName); return t === 'html' ? '🌐' : t === 'image' ? '🖼️' : t === 'js' ? '⚙️' : t === 'css' ? '🎨' : '📄'; }
     function truncCid(c) { if (!c || c.length < 16) return c; return c.slice(0, 8) + '…' + c.slice(-6); }
+
+    // --- Provider badge ---
+    function providerBadgeHtml(pin) {
+        var p = pin && pin.provider;
+        if (p === 'arweave' || pin.permanent) {
+            return '<span class="fm-card-badge fm-badge-arweave">♾️ Permanent</span>';
+        }
+        if (p === 'icp') {
+            return '<span class="fm-card-badge fm-badge-icp">∞ ICP</span>';
+        }
+        return '<span class="fm-card-badge active">📌 IPFS</span>';
+    }
+
+    // --- Explorer link for non-IPFS providers ---
+    function explorerLinkHtml(pin) {
+        if (!pin) return '';
+        if (pin.provider === 'arweave' && pin.cid) {
+            return '<a class="btn-icon-sm" href="https://arweave.net/' + pin.cid + '" target="_blank" rel="noopener" title="View on Arweave">🔍</a>';
+        }
+        if (pin.provider === 'icp' && pin.canisterId) {
+            return '<a class="btn-icon-sm" href="https://dashboard.internetcomputer.org/canister/' + pin.canisterId + '" target="_blank" rel="noopener" title="View on ICP Dashboard">🔍</a>';
+        }
+        return '';
+    }
     function gwUrl(pinOrCid) {
-        var cid = typeof pinOrCid === 'string' ? pinOrCid : (pinOrCid && pinOrCid.cid ? pinOrCid.cid : '');
-        var gateway = (pinOrCid && pinOrCid.gateway) ? pinOrCid.gateway : (providerGateway || '');
+        var pin = typeof pinOrCid === 'string' ? null : pinOrCid;
+        // Arweave files store the full URL directly
+        if (pin && pin.url) return pin.url;
+        var cid = typeof pinOrCid === 'string' ? pinOrCid : (pin && pin.cid ? pin.cid : '');
+        var gateway = (pin && pin.gateway) ? pin.gateway : (providerGateway || '');
         if (!gateway) return cid;
         if (gateway.indexOf(cid) !== -1) return gateway;
         return gateway + cid;
@@ -72,13 +99,17 @@ var FileManager = (function () {
         if (!pin || !pin.cid) return null;
         var name = pin.name || pin.cid;
         return {
-            cid: pin.cid,
-            name: name,
-            size: pin.size || 0,
-            date: pin.date || pin.date_pinned || '',
-            type: pin.type || typeFromName(name),
-            gateway: pin.gateway || (providerGateway ? providerGateway + pin.cid : ''),
-            source: 'provider'
+            cid:        pin.cid,
+            name:       name,
+            size:       pin.size || 0,
+            date:       pin.date || pin.date_pinned || '',
+            type:       pin.type || typeFromName(name),
+            gateway:    pin.gateway || (providerGateway ? providerGateway + pin.cid : ''),
+            provider:   pin.provider || (providerAdapter && providerAdapter.id) || 'pinata',
+            permanent:  !!(pin.permanent),
+            canisterId: pin.canisterId || '',
+            url:        pin.url || '',
+            source:     'provider'
         };
     }
 
@@ -86,17 +117,41 @@ var FileManager = (function () {
         if (!file || !file.cid) return null;
         var name = file.name || file.cid;
         return {
-            cid: file.cid,
-            name: name,
-            size: file.size || 0,
-            date: file.date || '',
-            type: file.type || typeFromName(name),
-            gateway: file.gateway || '',
-            source: 'index'
+            cid:        file.cid,
+            name:       name,
+            size:       file.size || 0,
+            date:       file.date || '',
+            type:       file.type || typeFromName(name),
+            gateway:    file.gateway || '',
+            provider:   file.provider || 'pinata',
+            permanent:  !!(file.permanent),
+            canisterId: file.canisterId || '',
+            url:        file.url || '',
+            source:     'index'
         };
     }
 
-    function mergePins(providerPins, indexEntries) {
+    // Normalise a raw localStorage entry (arweave/icp) into the pin shape
+    function normalizeLsFile(file) {
+        if (!file) return null;
+        var id = file.txId || file.cid || file.url || '';
+        var name = file.name || id;
+        return {
+            cid:        id,
+            name:       name,
+            size:       file.size || 0,
+            date:       file.date || '',
+            type:       file.type || typeFromName(name),
+            gateway:    file.url || '',
+            provider:   file.provider || 'arweave',
+            permanent:  !!(file.permanent),
+            canisterId: file.canisterId || '',
+            url:        file.url || '',
+            source:     'localStorage'
+        };
+    }
+
+    function mergePins(providerPins, indexEntries, lsEntries) {
         var map = {};
         providerPins.forEach(function (pin) {
             var normalized = normalizeProviderPin(pin);
@@ -108,15 +163,27 @@ var FileManager = (function () {
             var existing = map[normalized.cid];
             if (existing) {
                 map[normalized.cid] = {
-                    cid: normalized.cid,
-                    name: normalized.name || existing.name,
-                    size: normalized.size || existing.size,
-                    date: normalized.date || existing.date,
-                    type: normalized.type || existing.type,
-                    gateway: normalized.gateway || existing.gateway,
-                    source: 'index+provider'
+                    cid:        normalized.cid,
+                    name:       normalized.name || existing.name,
+                    size:       normalized.size || existing.size,
+                    date:       normalized.date || existing.date,
+                    type:       normalized.type || existing.type,
+                    gateway:    normalized.gateway || existing.gateway,
+                    provider:   normalized.provider || existing.provider,
+                    permanent:  normalized.permanent || existing.permanent,
+                    canisterId: normalized.canisterId || existing.canisterId,
+                    url:        normalized.url || existing.url,
+                    source:     'index+provider'
                 };
             } else {
+                map[normalized.cid] = normalized;
+            }
+        });
+        // Merge localStorage arweave/icp entries (not in provider pin list)
+        (lsEntries || []).forEach(function (file) {
+            var normalized = normalizeLsFile(file);
+            if (!normalized || !normalized.cid) return;
+            if (!map[normalized.cid]) {
                 map[normalized.cid] = normalized;
             }
         });
@@ -168,17 +235,29 @@ var FileManager = (function () {
 
         var indexPromise = syncIndexFiles(options && options.forceSync, options && options.showSyncStatus);
 
+        // Always load arweave + icp files from localStorage
+        var lsFiles = [];
+        try {
+            var raw = localStorage.getItem('web3deploy_files');
+            if (raw) {
+                var parsed = JSON.parse(raw);
+                lsFiles = parsed.filter(function (f) {
+                    return f.provider === 'arweave' || f.provider === 'icp';
+                });
+            }
+        } catch (e) { lsFiles = []; }
+
         Promise.all([pinsPromise, indexPromise]).then(function (results) {
             var providerPins = (results[0] && results[0].pins) ? results[0].pins : [];
             var indexResult = results[1] || { files: [], cid: null };
             indexFiles = indexResult.files || indexFiles;
             indexCid = indexResult.cid || indexCid;
-            allPins = mergePins(providerPins, indexFiles);
+            allPins = mergePins(providerPins, indexFiles, lsFiles);
             applyFilters();
             showLoading(false);
             loadStorage(key.key);
         }).catch(function () {
-            allPins = mergePins([], indexFiles || []);
+            allPins = mergePins([], indexFiles || [], lsFiles);
             applyFilters();
             showLoading(false);
         });
@@ -221,14 +300,63 @@ var FileManager = (function () {
     function renderGrid() {
         els.fmGrid.innerHTML = ''; filteredPins.forEach(function (pin) {
             var card = document.createElement('div'); card.className = 'fm-card'; card.setAttribute('data-cid', pin.cid);
-            card.innerHTML = '<div class="fm-card-top"><input type="checkbox" class="fm-card-check" data-cid="' + pin.cid + '"' + (selectedCids.has(pin.cid) ? ' checked' : '') + '><div class="fm-card-icon">' + iconFor(pin) + '</div><div class="fm-card-info"><div class="fm-card-name" title="' + pin.name + '">' + pin.name + '</div><div class="fm-card-cid" title="' + pin.cid + '">' + truncCid(pin.cid) + '</div></div></div><div class="fm-card-meta"><span>' + fmt(pin.size) + '</span><span>' + fmtDate(pin.date) + '</span><span class="fm-card-badge active">Active</span></div><div class="fm-card-actions"><button class="btn-icon-sm fm-act" data-act="ipfs" data-cid="' + pin.cid + '" title="Copy IPFS link">📋</button><button class="btn-icon-sm fm-act" data-act="gw" data-cid="' + pin.cid + '" title="Copy Gateway link">🔗</button><a class="btn-icon-sm fm-act" href="' + gwUrl(pin) + '" target="_blank" rel="noopener" title="Open in new tab">↗</a><button class="btn-icon-sm fm-act" data-act="versions" data-name="' + pin.name + '" title="Versions">🕐</button><button class="btn-icon-sm fm-act fm-btn-danger" data-act="unpin" data-cid="' + pin.cid + '" title="Unpin">✕</button></div>';
+            var isPermanent = pin.provider === 'arweave' || pin.permanent;
+            var isIcp       = pin.provider === 'icp';
+            if (isPermanent) card.setAttribute('data-permanent', 'true');
+            if (isIcp)       card.setAttribute('data-provider', 'icp');
+            // For arweave/icp, disable the unpin button (nothing to unpin)
+            var unpinBtn = (isPermanent || isIcp)
+                ? '<span class="btn-icon-sm" style="opacity:.3;cursor:not-allowed" title="Permanent storage">✕</span>'
+                : '<button class="btn-icon-sm fm-act fm-btn-danger" data-act="unpin" data-cid="' + pin.cid + '" title="Unpin">✕</button>';
+            var copyIdBtn = isPermanent
+                ? '<button class="btn-icon-sm fm-act" data-act="gw" data-cid="' + pin.cid + '" title="Copy Arweave URL">🔗</button>'
+                : '<button class="btn-icon-sm fm-act" data-act="ipfs" data-cid="' + pin.cid + '" title="Copy IPFS link">📋</button>' +
+                  '<button class="btn-icon-sm fm-act" data-act="gw" data-cid="' + pin.cid + '" title="Copy gateway URL">🔗</button>';
+            card.innerHTML =
+                '<div class="fm-card-top">' +
+                    '<input type="checkbox" class="fm-card-check" data-cid="' + pin.cid + '"' + (selectedCids.has(pin.cid) ? ' checked' : '') + '>' +
+                    '<div class="fm-card-icon">' + iconFor(pin) + '</div>' +
+                    '<div class="fm-card-info">' +
+                        '<div class="fm-card-name" title="' + pin.name + '">' + pin.name + '</div>' +
+                        '<div class="fm-card-cid" title="' + pin.cid + '">' + truncCid(pin.cid) + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="fm-card-meta">' +
+                    '<span>' + fmt(pin.size) + '</span>' +
+                    '<span>' + fmtDate(pin.date) + '</span>' +
+                    providerBadgeHtml(pin) +
+                '</div>' +
+                '<div class="fm-card-actions">' +
+                    copyIdBtn +
+                    '<a class="btn-icon-sm" href="' + gwUrl(pin) + '" target="_blank" rel="noopener" title="Open">↗</a>' +
+                    explorerLinkHtml(pin) +
+                    (isPermanent || isIcp ? '' : '<button class="btn-icon-sm fm-act" data-act="versions" data-name="' + pin.name + '" title="Versions">🕐</button>') +
+                    unpinBtn +
+                '</div>';
             els.fmGrid.appendChild(card);
         });
     }
     function renderList() {
         els.fmListBody.innerHTML = ''; filteredPins.forEach(function (pin) {
             var tr = document.createElement('tr');
-            tr.innerHTML = '<td class="fm-td-check"><input type="checkbox" data-cid="' + pin.cid + '"' + (selectedCids.has(pin.cid) ? ' checked' : '') + '></td><td><div class="fm-td-name">' + iconFor(pin) + ' <span title="' + pin.name + '">' + pin.name + '</span></div></td><td>' + fmt(pin.size) + '</td><td>' + fmtDate(pin.date) + '</td><td>' + typeForPin(pin).toUpperCase() + '</td><td><div class="fm-td-actions"><button class="btn-icon-sm fm-act" data-act="ipfs" data-cid="' + pin.cid + '">📋</button><button class="btn-icon-sm fm-act" data-act="gw" data-cid="' + pin.cid + '">🔗</button><a class="btn-icon-sm" href="' + gwUrl(pin) + '" target="_blank" rel="noopener">↗</a><button class="btn-icon-sm fm-act" data-act="versions" data-name="' + pin.name + '">🕐</button><button class="btn-icon-sm fm-act fm-btn-danger" data-act="unpin" data-cid="' + pin.cid + '">✕</button></div></td>';
+            var isPermanent = pin.provider === 'arweave' || pin.permanent;
+            var isIcp       = pin.provider === 'icp';
+            var unpinBtn = (isPermanent || isIcp)
+                ? '<span class="btn-icon-sm" style="opacity:.3;cursor:not-allowed" title="Permanent storage">✕</span>'
+                : '<button class="btn-icon-sm fm-act fm-btn-danger" data-act="unpin" data-cid="' + pin.cid + '">✕</button>';
+            var actionsHtml =
+                '<button class="btn-icon-sm fm-act" data-act="gw" data-cid="' + pin.cid + '">🔗</button>' +
+                '<a class="btn-icon-sm" href="' + gwUrl(pin) + '" target="_blank" rel="noopener">↗</a>' +
+                explorerLinkHtml(pin) +
+                (isPermanent || isIcp ? '' : '<button class="btn-icon-sm fm-act" data-act="versions" data-name="' + pin.name + '">🕐</button>') +
+                unpinBtn;
+            tr.innerHTML =
+                '<td class="fm-td-check"><input type="checkbox" data-cid="' + pin.cid + '"' + (selectedCids.has(pin.cid) ? ' checked' : '') + '></td>' +
+                '<td><div class="fm-td-name">' + iconFor(pin) + ' <span title="' + pin.name + '">' + pin.name + '</span></div></td>' +
+                '<td>' + fmt(pin.size) + '</td>' +
+                '<td>' + fmtDate(pin.date) + '</td>' +
+                '<td>' + providerBadgeHtml(pin) + '</td>' +
+                '<td><div class="fm-td-actions">' + actionsHtml + '</div></td>';
             els.fmListBody.appendChild(tr);
         });
     }
@@ -270,7 +398,7 @@ var FileManager = (function () {
         if (!providerAdapter || !providerAdapter.unpin) { alert('Unpin not supported by this provider.'); return; }
         providerAdapter.unpin(cid, key.key).then(function () { allPins = allPins.filter(function (p) { return p.cid !== cid; }); selectedCids.delete(cid); applyFilters(); }).catch(function (err) { alert(err.message || 'Failed to unpin'); });
     }
-    function openBulkUnpinModal() { var c = selectedCids.size; els.bulkCount.textContent = c; els.bulkCount2.textContent = c; els.bulkUnpinOverlay.classList.add('open'); }
+    function openBulkUnpinModal() { var c = selectedCids.size; els.bulkCount.textContent = c; els.bulkUnpinOverlay.classList.add('open'); }
     function closeBulkUnpinModal() { els.bulkUnpinOverlay.classList.remove('open'); }
     function confirmBulkUnpinAction() {
         var key = getActiveKey(); if (!key) return; var cids = Array.from(selectedCids); closeBulkUnpinModal();

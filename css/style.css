@@ -2797,6 +2797,27 @@ body::before {
     color: #f0ad4e;
 }
 
+/* Arweave — permanent storage badge */
+.fm-badge-arweave {
+    background: linear-gradient(135deg, rgba(0,255,136,0.12), rgba(0,204,136,0.08));
+    color: #00ffaa;
+    border: 1px solid rgba(0,255,136,0.2);
+    box-shadow: 0 0 8px rgba(0,255,136,0.08);
+    animation: arweave-pulse 3s ease-in-out infinite;
+}
+
+@keyframes arweave-pulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(0,255,136,0.08); }
+    50%       { box-shadow: 0 0 12px rgba(0,255,136,0.18); }
+}
+
+/* ICP — Internet Computer badge */
+.fm-badge-icp {
+    background: linear-gradient(135deg, rgba(0,102,255,0.12), rgba(123,97,255,0.08));
+    color: #66aaff;
+    border: 1px solid rgba(0,102,255,0.2);
+}
+
 /* Card hover actions */
 .fm-card-actions {
     display: flex;
@@ -3531,4 +3552,51 @@ body::before {
         width: 100%;
         justify-content: space-between;
     }
+}
+
+/* ============================================
+   Arweave + ICP Provider Styles
+   ============================================ */
+
+/* ---------- Record type: CNAME (for ICP) ---------- */
+.dm-record-type-cname {
+    background: rgba(123, 97, 255, 0.1);
+    color: #aa88ff;
+    border: 1px solid rgba(123, 97, 255, 0.2);
+}
+
+/* ---------- Permanent-storage shimmer on file cards ---------- */
+.fm-card[data-permanent="true"] {
+    border-color: rgba(0, 255, 136, 0.15);
+    box-shadow: 0 0 0 1px rgba(0, 255, 136, 0.05);
+}
+
+/* ---------- Provider-modal overlay base (Arweave + ICP JS modals) ---------- */
+/* These overlays are created dynamically by JS, so styles are minimal */
+#arweaveCostModal button:hover,
+#icpCanisterModal  button:hover {
+    opacity: 0.88;
+    transition: opacity 0.15s;
+}
+
+#arweaveCostModal input,
+#icpCanisterModal  input {
+    transition: border-color 0.2s;
+}
+
+#arweaveCostModal input:focus,
+#icpCanisterModal  input:focus {
+    outline: none;
+    border-color: #0066ff !important;
+    box-shadow: 0 0 0 3px rgba(0,102,255,0.12);
+}
+
+/* ---------- ICP provider-badge in setup form hint ---------- */
+.form-hint code {
+    background: rgba(0, 102, 255, 0.08);
+    color: #66aaff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.82em;
 }

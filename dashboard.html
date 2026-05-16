@@ -7,10 +7,10 @@
     <meta name="description" content="Manage your IPFS deployments. Upload files, manage providers, and get your decentralized links.">
     <meta http-equiv="Content-Security-Policy" 
           content="script-src 'self' 'unsafe-eval' 'unsafe-inline' 
-          https://cdnjs.cloudflare.com https://unpkg.com 
-          https://arweave.net;">
+          https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://esm.sh
+          https://arweave.net https://node2.irys.xyz https://gateway.irys.xyz
+          https://ic0.app;">
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://unpkg.com/arweave/bundles/web.bundle.js"></script>
 </head>
 <body>
 
@@ -117,9 +117,8 @@
                                 <div class="select-wrapper">
                                     <select id="providerSelect" class="form-control form-select">
                                         <option value="pinata">📌  Pinata</option>
-                                        <option value="filebase">🗄️  Filebase</option>
-                                        <option value="lighthouse">🏗️  Lighthouse</option>
-                                        <option value="arweave">⛓️ Arweave (Permanent)</option>
+                                        <option value="arweave">🌿  Arweave (Permanent · Irys)</option>
+                                        <option value="icp">∞  ICP (Internet Computer)</option>
                                     </select>
                                     <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16">
                                         <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" fill="none"></polyline>
@@ -211,11 +210,11 @@
                                 </div>
                                 <div class="dual-upload-row">
                                     <label class="toggle-label">
-                                        <input type="checkbox" id="arweaveBackupToggle">
+                                        <input type="checkbox" id="arweaveBackupToggle1">
                                         <span class="toggle-switch"></span>
                                         <span>♾️ Also backup to Arweave (permanent)</span>
                                     </label>
-                                    <span class="toggle-hint" id="arweaveWalletHint" style="display:none;color:#ff5566">
+                                    <span class="toggle-hint" id="arweaveWalletHint1" style="display:none;color:#ff5566">
                                         ⚠️ Set up Arweave wallet first
                                     </span>
                                 </div>
@@ -236,11 +235,11 @@
                         <div class="file-preview-footer">
                             <div class="dual-upload-row">
                                 <label class="toggle-label">
-                                    <input type="checkbox" id="arweaveBackupToggle">
+                                    <input type="checkbox" id="arweaveBackupToggle2">
                                     <span class="toggle-switch"></span>
                                     <span>♾️ Also backup to Arweave (permanent)</span>
                                 </label>
-                                <span class="toggle-hint" id="arweaveWalletHint" style="display:none;color:#ff5566">
+                                <span class="toggle-hint" id="arweaveWalletHint2" style="display:none;color:#ff5566">
                                     ⚠️ Set up Arweave wallet first
                                 </span>
                             </div>
@@ -505,8 +504,7 @@
                 <div class="modal-overlay" id="dmUpdateOverlay">
                     <div class="modal-card">
                         <div class="modal-icon">⚠️</div>
-                        <h3 style="color:var(--accent-blue)">تحديث مطلوب</h3>
-                        <p class="modal-ar">يجب تحديث TXT Record بالـ CID الجديد</p>
+                        <h3 style="color:var(--accent-blue)">Update Required</h3>
                         <p class="modal-en">You need to update your _dnslink TXT record with the new CID.</p>
                         <div class="modal-cid" id="dmNewCid">—</div>
                         <div class="dm-record-box dm-record-box-modal">
@@ -526,7 +524,7 @@
                         <div class="modal-icon">🗑️</div>
                         <h3 style="color:#ff5566">Unlink Domain</h3>
                         <p class="modal-en">Remove <strong id="dmUnlinkName">—</strong> from your linked domains?</p>
-                        <p class="modal-ar">تذكر حذف سجلات DNS من مزود النطاق الخاص بك.</p>
+                        <p class="modal-en">Remember to remove the DNS records from your domain provider.</p>
                         <div class="modal-actions">
                             <button class="btn btn-primary fm-btn-danger" id="dmConfirmUnlink">🗑️ Unlink</button>
                             <button class="btn btn-secondary" id="dmCancelUnlink">Cancel</button>
@@ -592,9 +590,8 @@
         <div class="modal-overlay" id="unpinOverlay">
             <div class="modal-card" id="unpinModal">
                 <div class="modal-icon">⚠️</div>
-                <h3>تحذير</h3>
-                <p class="modal-ar">تحذير: حذف هذا الملف سيزيله من خدمة Pinata. قد يختفي من IPFS نهائياً إذا لم يكن أحد آخر يحتفظ به.</p>
-                <p class="modal-en">Warning: Unpinning will remove this file from Pinata. It may disappear from IPFS permanently if no other node is hosting it.</p>
+                <h3>Warning</h3>
+                <p class="modal-en">Unpinning will remove this file from your storage provider. It may disappear from IPFS permanently if no other node is hosting it.</p>
                 <div class="modal-cid" id="unpinCid">—</div>
                 <div class="modal-actions">
                     <button class="btn btn-primary fm-btn-danger" id="confirmUnpin">✕ Unpin</button>
@@ -608,8 +605,7 @@
             <div class="modal-card">
                 <div class="modal-icon">⚠️</div>
                 <h3>Bulk Unpin</h3>
-                <p class="modal-ar">تحذير: سيتم حذف <strong id="bulkCount">0</strong> ملفات من Pinata نهائياً.</p>
-                <p class="modal-en">This will unpin <strong id="bulkCount2">0</strong> files. This action cannot be undone.</p>
+                <p class="modal-en">This will unpin <strong id="bulkCount">0</strong> file(s). This action cannot be undone.</p>
                 <div class="modal-actions">
                     <button class="btn btn-primary fm-btn-danger" id="confirmBulkUnpin">✕ Unpin All</button>
                     <button class="btn btn-secondary" id="cancelBulkUnpin">Cancel</button>
@@ -628,14 +624,58 @@
 
     </main>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <!-- ========== CDN Libraries ========== -->
+    <!-- Ethers v6 — MetaMask wallet -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+
+    <!-- Irys — Arweave uploads paid in ETH via MetaMask -->
+    <!-- ESM shim: re-exports WebIrys to window.WebIrys for IIFE modules -->
+    <script type="module">
+        import { WebIrys } from 'https://unpkg.com/@irys/web-upload@0.1.1';
+        window.WebIrys = WebIrys;
+        console.info('[Web3Deploy] WebIrys loaded → window.WebIrys set.');
+    </script>
+
+    <!-- DFINITY — ICP asset canister uploads -->
+    <!-- Buffer polyfill for DFINITY and module resolution fix -->
+    <script type="importmap">
+    {
+        "imports": {
+            "buffer": "https://esm.sh/buffer",
+            "buffer/": "https://esm.sh/buffer/"
+        }
+    }
+    </script>
+    <script type="module">
+        import { Buffer } from 'https://esm.sh/buffer';
+        window.Buffer = window.Buffer || Buffer;
+    </script>
+    <!-- ESM shim: re-exports DFINITY classes to window.ic for IIFE modules -->
+    <script type="module">
+        try {
+            const agent = await import('https://unpkg.com/@dfinity/agent@1.4.0/lib/esm/index.js');
+            const authClient = await import('https://unpkg.com/@dfinity/auth-client@1.4.0/lib/esm/index.js');
+            window.ic = window.ic || {};
+            window.ic.agent = { HttpAgent: agent.HttpAgent, Actor: agent.Actor, IDL: agent.IDL };
+            window.ic.authClient = { AuthClient: authClient.AuthClient };
+            console.info('[Web3Deploy] DFINITY SDK loaded.');
+        } catch (e) {
+            console.warn('[Web3Deploy] DFINITY SDK failed to load:', e.message);
+        }
+    </script>
+
+    <!-- ========== App Modules ========== -->
+    <!-- pinata.js MUST load before storageproviders.js (adapter reads PinataAPI) -->
     <script src="js/pinata.js"></script>
     <script src="js/storageproviders.js"></script>
     <script src="js/ipfsindex.js"></script>
-    <script src="js/domainsindex.js"></script>
+    <script src="js/arweave.js"></script>
+    <script src="js/icp.js"></script>
     <script src="js/filemanager.js"></script>
     <script src="js/domainmanager.js"></script>
+    <script src="js/domainsindex.js"></script>
     <script src="js/wallet.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
+
