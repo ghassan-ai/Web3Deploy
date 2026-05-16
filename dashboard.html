@@ -5,12 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard — Web3Deploy</title>
     <meta name="description" content="Manage your IPFS deployments. Upload files, manage providers, and get your decentralized links.">
-    <meta http-equiv="Content-Security-Policy" 
-          content="script-src 'self' 'unsafe-eval' 'unsafe-inline' 
-          https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://esm.sh
-          https://arweave.net https://node2.irys.xyz https://gateway.irys.xyz
-          https://ic0.app;">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://esm.sh https://arweave.net https://node2.irys.xyz https://gateway.irys.xyz https://ic0.app blob:; connect-src * 'unsafe-inline'; worker-src 'self' blob:;">
     <link rel="stylesheet" href="css/style.css">
+
+    <!-- ========== 1. Import Map (MUST BE FIRST) ========== -->
+    <script type="importmap">
+    {
+        "imports": {
+            "buffer": "https://esm.sh/buffer@6.0.3",
+            "@dfinity/candid": "https://esm.sh/@dfinity/candid@2.1.0?external=buffer",
+            "@dfinity/agent": "https://esm.sh/@dfinity/agent@2.1.0?external=buffer",
+            "@dfinity/auth-client": "https://esm.sh/@dfinity/auth-client@2.1.0?external=buffer",
+            "@dfinity/principal": "https://esm.sh/@dfinity/principal@2.1.0?external=buffer"
+        }
+    }
+    </script>
+
+    <!-- ========== 2. Global Polyfills (Buffer & Process) ========== -->
+    <script type="module">
+        import { Buffer } from 'buffer';
+        window.Buffer = window.Buffer || Buffer;
+        window.process = { env: {} };
+    </script>
+
+    <!-- ========== 3. Web3 Provider SDKs ========== -->
+    <!-- Ethers v6 — MetaMask wallet -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+
+    <!-- Irys — Arweave uploads paid in ETH via MetaMask -->
+    <script type="module">
+        import { WebIrys } from 'https://esm.sh/@irys/sdk@0.2.1?bundle-deps';
+        window.WebIrys = WebIrys;
+    </script>
+
+    <!-- DFINITY — ICP asset canister uploads -->
+    <script type="module">
+        try {
+            const agent = await import('@dfinity/agent');
+            const authClient = await import('@dfinity/auth-client');
+            window.ic = window.ic || {};
+            window.ic.agent = { HttpAgent: agent.HttpAgent, Actor: agent.Actor, IDL: agent.IDL };
+            window.ic.authClient = { AuthClient: authClient.AuthClient };
+            console.info('[Web3Deploy] All remote SDKs loaded correctly.');
+        } catch (e) {
+            console.warn('[Web3Deploy] Remote SDK load error:', e.message);
+        }
+    </script>
 </head>
 <body>
 
@@ -624,60 +664,29 @@
 
     </main>
 
-    <!-- ========== CDN Libraries ========== -->
-    <!-- Ethers v6 — MetaMask wallet -->
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <!-- ========== App Modules (Local) ========== -->
+    <!-- Loaded in explicit dependency order. We DO NOT use type="module" here because our 
+         architecture uses the IIFE pattern to attach modules to the global scope (window).
+         Using type="module" would sandbox these variables and break inter-file dependencies. -->
+    
+    <!-- 1. Core / Wallet -->
+    <script src="js/wallet.js"></script>
 
-    <!-- Irys — Arweave uploads paid in ETH via MetaMask -->
-    <!-- ESM shim: re-exports WebIrys to window.WebIrys for IIFE modules -->
-    <script type="module">
-        import { WebIrys } from 'https://esm.sh/@irys/web-upload@0.1.1';
-        window.WebIrys = WebIrys;
-        console.info('[Web3Deploy] WebIrys loaded → window.WebIrys set.');
-    </script>
-
-    <!-- DFINITY — ICP asset canister uploads -->
-    <!-- Buffer polyfill for DFINITY and module resolution fix -->
-    <script type="importmap">
-    {
-        "imports": {
-            "buffer": "https://esm.sh/buffer@6.0.3",
-            "@dfinity/candid": "https://esm.sh/@dfinity/candid@1.4.0",
-            "@dfinity/agent": "https://esm.sh/@dfinity/agent@1.4.0",
-            "@dfinity/auth-client": "https://esm.sh/@dfinity/auth-client@1.4.0",
-            "@dfinity/principal": "https://esm.sh/@dfinity/principal@1.4.0"
-        }
-    }
-    </script>
-    <script type="module">
-        import { Buffer } from 'https://esm.sh/buffer';
-        window.Buffer = window.Buffer || Buffer;
-    </script>
-    <!-- ESM shim: re-exports DFINITY classes to window.ic for IIFE modules -->
-    <script type="module">
-        try {
-            const agent = await import('https://unpkg.com/@dfinity/agent@1.4.0/lib/esm/index.js');
-            const authClient = await import('https://unpkg.com/@dfinity/auth-client@1.4.0/lib/esm/index.js');
-            window.ic = window.ic || {};
-            window.ic.agent = { HttpAgent: agent.HttpAgent, Actor: agent.Actor, IDL: agent.IDL };
-            window.ic.authClient = { AuthClient: authClient.AuthClient };
-            console.info('[Web3Deploy] DFINITY SDK loaded.');
-        } catch (e) {
-            console.warn('[Web3Deploy] DFINITY SDK failed to load:', e.message);
-        }
-    </script>
-
-    <!-- ========== App Modules ========== -->
-    <!-- pinata.js MUST load before storageproviders.js (adapter reads PinataAPI) -->
+    <!-- 2. Individual Storage Providers -->
     <script src="js/pinata.js"></script>
-    <script src="js/storageproviders.js"></script>
     <script src="js/ipfsindex.js"></script>
     <script src="js/arweave.js"></script>
     <script src="js/icp.js"></script>
+
+    <!-- 3. Provider Registry (depends on all providers above) -->
+    <script src="js/storageproviders.js"></script>
+
+    <!-- 4. Managers & Indices -->
     <script src="js/filemanager.js"></script>
     <script src="js/domainmanager.js"></script>
     <script src="js/domainsindex.js"></script>
-    <script src="js/wallet.js"></script>
+
+    <!-- 5. Main Application (initializes everything) -->
     <script src="js/app.js"></script>
 </body>
 </html>
