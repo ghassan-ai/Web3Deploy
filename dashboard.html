@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard — Web3Deploy</title>
-    <meta name="description" content="Manage your IPFS deployments. Upload files, manage providers, and get your decentralized links.">
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://esm.sh https://arweave.net https://node2.irys.xyz https://gateway.irys.xyz https://ic0.app blob:; connect-src * 'unsafe-inline'; worker-src 'self' blob:;">
+    <meta name="description"
+        content="Manage your IPFS deployments. Upload files, manage providers, and get your decentralized links.">
+    <meta http-equiv="Content-Security-Policy"
+        content="script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://esm.sh https://arweave.net https://node2.irys.xyz https://gateway.irys.xyz https://ic0.app blob:; connect-src * 'unsafe-inline'; worker-src 'self' blob:;">
     <link rel="stylesheet" href="css/style.css">
 
     <!-- ========== 1. Import Map (MUST BE FIRST) ========== -->
@@ -34,8 +37,8 @@
 
     <!-- Irys — Arweave uploads paid in ETH via MetaMask -->
     <script type="module">
-        import { WebIrys } from 'https://esm.sh/@irys/sdk@0.2.1?bundle-deps';
-        window.WebIrys = WebIrys;
+        import { WebUploader } from 'https://esm.sh/@irys/web-upload@0.0.15?bundle-deps';
+        window.WebIrys = WebUploader;
     </script>
 
     <!-- DFINITY — ICP asset canister uploads -->
@@ -52,6 +55,7 @@
         }
     </script>
 </head>
+
 <body>
 
     <!-- ========== Navbar ========== -->
@@ -94,8 +98,12 @@
                     <span class="wallet-btn-icon" id="walletBtnIcon">🦊</span>
                     <span class="wallet-btn-text" id="walletBtnText">Connect Wallet</span>
                 </button>
-                <button class="wallet-disconnect-btn" id="walletDisconnectBtn" title="Disconnect wallet" style="display:none">
-                    <svg viewBox="0 0 24 24" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/></svg>
+                <button class="wallet-disconnect-btn" id="walletDisconnectBtn" title="Disconnect wallet"
+                    style="display:none">
+                    <svg viewBox="0 0 24 24" width="14" height="14">
+                        <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" />
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" />
+                    </svg>
                 </button>
             </div>
 
@@ -128,7 +136,8 @@
                             <span class="setup-wallet-btn-sub">Sign in with your wallet — no API key needed</span>
                         </div>
                         <svg class="setup-wallet-btn-arrow" viewBox="0 0 24 24" width="20" height="20">
-                            <polyline points="9 18 15 12 9 6" stroke="currentColor" stroke-width="2" fill="none"></polyline>
+                            <polyline points="9 18 15 12 9 6" stroke="currentColor" stroke-width="2" fill="none">
+                            </polyline>
                         </svg>
                     </button>
                     <div class="setup-wallet-status" id="setupWalletStatus"></div>
@@ -145,7 +154,8 @@
                         <span>🔑</span>
                         <span>Enter API Key manually</span>
                         <svg class="setup-apikey-arrow" viewBox="0 0 24 24" width="16" height="16">
-                            <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" fill="none"></polyline>
+                            <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" fill="none">
+                            </polyline>
                         </svg>
                     </button>
 
@@ -156,12 +166,13 @@
                                 <label for="providerSelect">Provider</label>
                                 <div class="select-wrapper">
                                     <select id="providerSelect" class="form-control form-select">
-                                        <option value="pinata">📌  Pinata</option>
-                                        <option value="arweave">🌿  Arweave (Permanent · Irys)</option>
-                                        <option value="icp">∞  ICP (Internet Computer)</option>
+                                        <option value="pinata">📌 Pinata</option>
+                                        <option value="arweave">🌿 Arweave (Permanent · Irys)</option>
+                                        <option value="icp">∞ ICP (Internet Computer)</option>
                                     </select>
                                     <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16">
-                                        <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" fill="none"></polyline>
+                                        <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2"
+                                            fill="none"></polyline>
                                     </svg>
                                 </div>
                             </div>
@@ -170,28 +181,30 @@
                             <div class="form-group">
                                 <label for="apiKeyInput">API Key / JWT Token</label>
                                 <div class="input-wrapper">
-                                    <input
-                                        type="password"
-                                        id="apiKeyInput"
-                                        class="form-control form-input"
-                                        placeholder="Paste your API key here…"
-                                        autocomplete="off"
-                                        spellcheck="false"
-                                        required
-                                    >
-                                    <button type="button" class="input-eye" id="toggleKeyVis" aria-label="Toggle key visibility" title="Show / hide key">
+                                    <input type="password" id="apiKeyInput" class="form-control form-input"
+                                        placeholder="Paste your API key here…" autocomplete="off" spellcheck="false"
+                                        required>
+                                    <button type="button" class="input-eye" id="toggleKeyVis"
+                                        aria-label="Toggle key visibility" title="Show / hide key">
                                         <svg id="eyeOpen" viewBox="0 0 24 24" width="18" height="18">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/>
-                                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor"
+                                                stroke-width="2" fill="none" />
+                                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"
+                                                fill="none" />
                                         </svg>
-                                        <svg id="eyeClosed" viewBox="0 0 24 24" width="18" height="18" style="display:none;">
-                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="2" fill="none"/>
-                                            <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2"/>
+                                        <svg id="eyeClosed" viewBox="0 0 24 24" width="18" height="18"
+                                            style="display:none;">
+                                            <path
+                                                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                                                stroke="currentColor" stroke-width="2" fill="none" />
+                                            <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor"
+                                                stroke-width="2" />
                                         </svg>
                                     </button>
                                 </div>
                                 <div class="form-hint" id="providerHint">
-                                    Get your free API key from <a href="https://app.pinata.cloud/developers/api-keys" target="_blank" rel="noopener">Pinata Dashboard</a>
+                                    Get your free API key from <a href="https://app.pinata.cloud/developers/api-keys"
+                                        target="_blank" rel="noopener">Pinata Dashboard</a>
                                 </div>
                             </div>
 
@@ -210,8 +223,9 @@
 
                 <div class="setup-security">
                     <svg viewBox="0 0 24 24" width="14" height="14">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"
+                            fill="none" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2" fill="none" />
                     </svg>
                     Stored in localStorage only — never sent to any server.
                 </div>
@@ -245,8 +259,10 @@
                                 <h3>Drag &amp; drop files or folders here</h3>
                                 <p>or choose an option below</p>
                                 <div class="drop-zone-actions">
-                                    <button type="button" class="btn btn-secondary" id="selectFilesBtn">📄 Select Files</button>
-                                    <button type="button" class="btn btn-secondary" id="selectFolderBtn">📁 Select Folder</button>
+                                    <button type="button" class="btn btn-secondary" id="selectFilesBtn">📄 Select
+                                        Files</button>
+                                    <button type="button" class="btn btn-secondary" id="selectFolderBtn">📁 Select
+                                        Folder</button>
                                 </div>
                                 <div class="dual-upload-row">
                                     <label class="toggle-label">
@@ -254,7 +270,8 @@
                                         <span class="toggle-switch"></span>
                                         <span>♾️ Also backup to Arweave (permanent)</span>
                                     </label>
-                                    <span class="toggle-hint" id="arweaveWalletHint1" style="display:none;color:#ff5566">
+                                    <span class="toggle-hint" id="arweaveWalletHint1"
+                                        style="display:none;color:#ff5566">
                                         ⚠️ Set up Arweave wallet first
                                     </span>
                                 </div>
@@ -264,7 +281,9 @@
 
                     <div class="upload-state" id="stateFilePreview" style="display:none">
                         <div class="file-preview-header">
-                            <div><h3>Ready to Upload</h3><span class="file-meta" id="fileMeta">0 files · 0 KB</span></div>
+                            <div>
+                                <h3>Ready to Upload</h3><span class="file-meta" id="fileMeta">0 files · 0 KB</span>
+                            </div>
                             <button type="button" class="btn-icon" id="clearFilesBtn" title="Clear all files">✕</button>
                         </div>
                         <div class="pin-name-row compact">
@@ -283,15 +302,20 @@
                                     ⚠️ Set up Arweave wallet first
                                 </span>
                             </div>
-                            <button type="button" class="btn btn-primary btn-full" id="uploadBtn">🚀 Upload to IPFS</button>
+                            <button type="button" class="btn btn-primary btn-full" id="uploadBtn">🚀 Upload to
+                                IPFS</button>
                         </div>
                     </div>
 
                     <div class="upload-state" id="stateUploading" style="display:none">
                         <div class="uploading-card">
-                            <div class="upload-anim"><div class="upload-anim-ring"></div><span class="upload-anim-icon">📤</span></div>
+                            <div class="upload-anim">
+                                <div class="upload-anim-ring"></div><span class="upload-anim-icon">📤</span>
+                            </div>
                             <h3>Uploading to IPFS…</h3>
-                            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+                            <div class="progress-track">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
                             <div class="progress-stats">
                                 <span id="progressPercent">0 %</span>
                                 <span id="progressSize">0 / 0 MB</span>
@@ -310,28 +334,34 @@
                                 <label>CID (Content Identifier)</label>
                                 <div class="result-value-row">
                                     <code class="result-cid" id="resultCid">Qm…</code>
-                                    <button type="button" class="btn-icon-sm" id="copyCidBtn" title="Copy CID">📋</button>
+                                    <button type="button" class="btn-icon-sm" id="copyCidBtn"
+                                        title="Copy CID">📋</button>
                                 </div>
                             </div>
                             <div class="result-field">
                                 <label>Gateway Link</label>
                                 <div class="result-value-row">
-                                    <a class="result-link" id="resultLink" href="#" target="_blank" rel="noopener">https://…</a>
-                                    <button type="button" class="btn-icon-sm" id="copyLinkBtn" title="Copy link">📋</button>
-                                    <a class="btn-icon-sm" id="openLinkBtn" href="#" target="_blank" rel="noopener" title="Open in new tab">🔗</a>
+                                    <a class="result-link" id="resultLink" href="#" target="_blank"
+                                        rel="noopener">https://…</a>
+                                    <button type="button" class="btn-icon-sm" id="copyLinkBtn"
+                                        title="Copy link">📋</button>
+                                    <a class="btn-icon-sm" id="openLinkBtn" href="#" target="_blank" rel="noopener"
+                                        title="Open in new tab">🔗</a>
                                 </div>
                             </div>
                             <div class="result-field" id="arweaveResultField" style="display:none">
                                 <label>♾️ Arweave Backup</label>
                                 <div class="result-value-row">
                                     <span class="arweave-status" id="arweaveStatus">Uploading...</span>
-                                    <a class="result-link" id="arweaveLink" href="#" target="_blank" style="display:none">
+                                    <a class="result-link" id="arweaveLink" href="#" target="_blank"
+                                        style="display:none">
                                         View on Arweave →
                                     </a>
                                 </div>
                             </div>
                             <div class="result-actions">
-                                <button type="button" class="btn btn-primary" id="newUploadBtn">↑ Upload Another</button>
+                                <button type="button" class="btn btn-primary" id="newUploadBtn">↑ Upload
+                                    Another</button>
                             </div>
                         </div>
                     </div>
@@ -368,7 +398,11 @@
                     <div class="fm-toolbar">
                         <div class="fm-toolbar-left">
                             <div class="fm-search-wrap">
-                                <svg class="fm-search-icon" viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" fill="none"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2"/></svg>
+                                <svg class="fm-search-icon" viewBox="0 0 24 24" width="16" height="16">
+                                    <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" fill="none" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor"
+                                        stroke-width="2" />
+                                </svg>
                                 <input type="text" class="fm-search" id="fmSearch" placeholder="Search files…">
                             </div>
                             <div class="fm-filters">
@@ -382,7 +416,8 @@
                         </div>
                         <div class="fm-toolbar-right">
                             <div class="fm-sync">
-                                <button class="btn btn-secondary btn-sm" id="fmSyncBtn" type="button">Sync Files</button>
+                                <button class="btn btn-secondary btn-sm" id="fmSyncBtn" type="button">Sync
+                                    Files</button>
                                 <span class="fm-sync-status" id="fmSyncStatus"></span>
                             </div>
                             <select class="fm-sort" id="fmSort">
@@ -393,10 +428,26 @@
                             </select>
                             <div class="fm-view-toggle" id="fmViewToggle">
                                 <button class="fm-view-btn active" data-view="grid" title="Grid view">
-                                    <svg viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" fill="none"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" fill="none"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" fill="none"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                                    <svg viewBox="0 0 24 24" width="16" height="16">
+                                        <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor"
+                                            stroke-width="2" fill="none" />
+                                        <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor"
+                                            stroke-width="2" fill="none" />
+                                        <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor"
+                                            stroke-width="2" fill="none" />
+                                        <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor"
+                                            stroke-width="2" fill="none" />
+                                    </svg>
                                 </button>
                                 <button class="fm-view-btn" data-view="list" title="List view">
-                                    <svg viewBox="0 0 24 24" width="16" height="16"><line x1="8" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2"/><line x1="8" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2"/><line x1="8" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
+                                    <svg viewBox="0 0 24 24" width="16" height="16">
+                                        <line x1="8" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" />
+                                        <line x1="8" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" />
+                                        <line x1="8" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2" />
+                                        <circle cx="4" cy="6" r="1" fill="currentColor" />
+                                        <circle cx="4" cy="12" r="1" fill="currentColor" />
+                                        <circle cx="4" cy="18" r="1" fill="currentColor" />
+                                    </svg>
                                 </button>
                             </div>
                         </div>
@@ -404,11 +455,13 @@
 
                     <!-- Bulk Actions Bar (hidden until selection) -->
                     <div class="fm-bulk-bar" id="fmBulkBar">
-                        <label class="fm-select-all"><input type="checkbox" id="fmSelectAll"> <span>Select All</span></label>
+                        <label class="fm-select-all"><input type="checkbox" id="fmSelectAll"> <span>Select
+                                All</span></label>
                         <span class="fm-bulk-count" id="fmBulkCount">0 selected</span>
                         <div class="fm-bulk-actions">
                             <button class="btn btn-secondary btn-sm" id="fmBulkCopy">📋 Copy CIDs</button>
-                            <button class="btn btn-secondary btn-sm fm-btn-danger" id="fmBulkUnpin">✕ Unpin Selected</button>
+                            <button class="btn btn-secondary btn-sm fm-btn-danger" id="fmBulkUnpin">✕ Unpin
+                                Selected</button>
                         </div>
                     </div>
 
@@ -476,7 +529,10 @@
                                         <option value="namecheap">🔴 Namecheap</option>
                                         <option value="other">⚙️ Other</option>
                                     </select>
-                                    <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" fill="none"></polyline></svg>
+                                    <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2"
+                                            fill="none"></polyline>
+                                    </svg>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -485,7 +541,10 @@
                                     <select id="dmCidInput" class="form-control form-select">
                                         <option value="">Select a pinned site…</option>
                                     </select>
-                                    <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" fill="none"></polyline></svg>
+                                    <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2"
+                                            fill="none"></polyline>
+                                    </svg>
                                 </div>
                             </div>
                         </div>
@@ -513,7 +572,8 @@
                         <h3 class="dm-card-title">🌍 Linked Domains</h3>
                         <div class="dm-toolbar">
                             <div class="dm-sync">
-                                <button class="btn btn-secondary btn-sm" id="dmSyncBtn" type="button">Sync Domains</button>
+                                <button class="btn btn-secondary btn-sm" id="dmSyncBtn" type="button">Sync
+                                    Domains</button>
                                 <span class="dm-sync-status" id="dmSyncStatus"></span>
                             </div>
                         </div>
@@ -631,7 +691,8 @@
             <div class="modal-card" id="unpinModal">
                 <div class="modal-icon">⚠️</div>
                 <h3>Warning</h3>
-                <p class="modal-en">Unpinning will remove this file from your storage provider. It may disappear from IPFS permanently if no other node is hosting it.</p>
+                <p class="modal-en">Unpinning will remove this file from your storage provider. It may disappear from
+                    IPFS permanently if no other node is hosting it.</p>
                 <div class="modal-cid" id="unpinCid">—</div>
                 <div class="modal-actions">
                     <button class="btn btn-primary fm-btn-danger" id="confirmUnpin">✕ Unpin</button>
@@ -645,7 +706,8 @@
             <div class="modal-card">
                 <div class="modal-icon">⚠️</div>
                 <h3>Bulk Unpin</h3>
-                <p class="modal-en">This will unpin <strong id="bulkCount">0</strong> file(s). This action cannot be undone.</p>
+                <p class="modal-en">This will unpin <strong id="bulkCount">0</strong> file(s). This action cannot be
+                    undone.</p>
                 <div class="modal-actions">
                     <button class="btn btn-primary fm-btn-danger" id="confirmBulkUnpin">✕ Unpin All</button>
                     <button class="btn btn-secondary" id="cancelBulkUnpin">Cancel</button>
@@ -668,7 +730,7 @@
     <!-- Loaded in explicit dependency order. We DO NOT use type="module" here because our 
          architecture uses the IIFE pattern to attach modules to the global scope (window).
          Using type="module" would sandbox these variables and break inter-file dependencies. -->
-    
+
     <!-- 1. Core / Wallet -->
     <script src="js/wallet.js"></script>
 
@@ -689,5 +751,5 @@
     <!-- 5. Main Application (initializes everything) -->
     <script src="js/app.js"></script>
 </body>
-</html>
 
+</html>

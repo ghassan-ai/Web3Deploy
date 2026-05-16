@@ -73,11 +73,11 @@ var StorageProviders = (function () {
             name:        config.name || id,
             gatewayUrl:  ensureTrailingSlash(config.gatewayUrl || ''),
             formatBytes: config.formatBytes || fallbackFormatBytes,
-            uploadJSON:  config.uploadJSON  || function () { return unsupported(config.name || id, 'upload JSON'); },
-            listPins:    config.listPins    || function () { return unsupported(config.name || id, 'list pins'); },
-            unpin:       config.unpin       || function () { return unsupported(config.name || id, 'unpin'); },
+            uploadJSON:  config.uploadJSON  || null,
+            listPins:    config.listPins    || null,
+            unpin:       config.unpin       || null,
             unpinBulk:   config.unpinBulk   || null,
-            getUsage:    config.getUsage    || function () { return unsupported(config.name || id, 'usage'); }
+            getUsage:    config.getUsage    || null
         };
     }
 
