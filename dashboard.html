@@ -631,7 +631,7 @@
     <!-- Irys — Arweave uploads paid in ETH via MetaMask -->
     <!-- ESM shim: re-exports WebIrys to window.WebIrys for IIFE modules -->
     <script type="module">
-        import { WebIrys } from 'https://unpkg.com/@irys/web-upload@0.1.1';
+        import { WebIrys } from 'https://esm.sh/@irys/web-upload@0.1.1';
         window.WebIrys = WebIrys;
         console.info('[Web3Deploy] WebIrys loaded → window.WebIrys set.');
     </script>
@@ -641,8 +641,11 @@
     <script type="importmap">
     {
         "imports": {
-            "buffer": "https://esm.sh/buffer",
-            "buffer/": "https://esm.sh/buffer/"
+            "buffer": "https://esm.sh/buffer@6.0.3",
+            "@dfinity/candid": "https://esm.sh/@dfinity/candid@1.4.0",
+            "@dfinity/agent": "https://esm.sh/@dfinity/agent@1.4.0",
+            "@dfinity/auth-client": "https://esm.sh/@dfinity/auth-client@1.4.0",
+            "@dfinity/principal": "https://esm.sh/@dfinity/principal@1.4.0"
         }
     }
     </script>
