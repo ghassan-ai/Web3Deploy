@@ -15,8 +15,18 @@
     <!-- Ethers v6 — MetaMask wallet -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
 
-    <!-- Arweave JS — Native Arweave uploads -->
-    <script src="https://unpkg.com/arweave@1.14.4/bundles/web.bundle.min.js"></script>
+    <!-- Bundlr — Arweave uploads paid in ETH via MetaMask -->
+    <script type="module">
+        try {
+            const { WebBundlr } = await import(
+                'https://esm.sh/@bundlr-network/client@0.11.19/build/esm/web?bundle-deps'
+            );
+            window.WebBundlr = WebBundlr;
+            console.log('✓ Bundlr loaded');
+        } catch(e) {
+            console.error('Bundlr load failed:', e.message);
+        }
+    </script>
 
     <!-- DFINITY — ICP (ESM via esm.sh, pinned deps to avoid candid export conflicts) -->
     <script type="module">

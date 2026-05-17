@@ -28,11 +28,9 @@ var StorageProviders = (function () {
             icon:        '🌿',
             type:        'permanent',
             gateway:     'https://arweave.net/',
-            description: 'Permanent storage on Arweave natively.',
-            docsUrl:     'https://docs.arweave.org',
-            setupFields: [
-                { key: 'web3deploy_arweave_jwk', label: 'Arweave Wallet (JWK JSON)', type: 'textarea' }
-            ]
+            description: 'Permanent storage on Arweave. Pay once in ETH via MetaMask.',
+            docsUrl:     'https://docs.bundlr.network',
+            setupFields: [] // No API key — uses MetaMask
         },
         icp: {
             name:        'ICP',
