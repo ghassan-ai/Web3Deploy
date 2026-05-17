@@ -145,27 +145,59 @@ var ArweaveProvider = (function () {
             throw new Error('MetaMask not found. Please install MetaMask to use Arweave storage.');
         }
 
-        // Locate WebIrys constructor — CDN exposes it as window.WebIrys
-        var IrysClass = window.WebIrys ||
-                        (window.IrysWebUpload && window.IrysWebUpload.WebIrys) ||
-                        window.Irys;
+        try {
+            // Debug: log the actual shape of window.WebIrys so we can see
+            // which export key the esm.sh bundle provides.
+            console.log('WebIrys shape:', Object.keys(window.WebIrys || {}));
 
-        if (!IrysClass) {
-            throw new Error(
-                'Irys SDK not loaded. Ensure the @irys/web-upload CDN script is in dashboard.html.'
-            );
+            // @irys/web-upload@0.0.15 via esm.sh may export the constructor
+            // under different keys depending on bundle configuration.
+            // Try every known shape before giving up.
+            var Ctor = null;
+
+            if (window.WebIrys) {
+                Ctor = window.WebIrys.WebIrys      // named export WebIrys
+                    || window.WebIrys.WebUploader   // named export WebUploader
+                    || window.WebIrys.default        // default export
+                    || (typeof window.WebIrys === 'function' ? window.WebIrys : null);
+            }
+
+            // Secondary globals that other CDN setups might use
+            if (!Ctor && window.IrysWebUpload) {
+                Ctor = window.IrysWebUpload.WebIrys
+                    || window.IrysWebUpload.WebUploader
+                    || window.IrysWebUpload.default
+                    || (typeof window.IrysWebUpload === 'function' ? window.IrysWebUpload : null);
+            }
+
+            if (!Ctor && typeof window.Irys === 'function') {
+                Ctor = window.Irys;
+            }
+
+            if (!Ctor || typeof Ctor !== 'function') {
+                throw new Error(
+                    'Irys SDK not loaded. Ensure the @irys/web-upload CDN script is in dashboard.html. ' +
+                    'window.WebIrys keys: ' + Object.keys(window.WebIrys || {}).join(', ')
+                );
+            }
+
+            console.log('Using Irys constructor:', Ctor.name || 'anonymous');
+
+            var irysInstance = new Ctor({
+                url:   IRYS_NODE,
+                token: 'ethereum',
+                wallet: { provider: window.ethereum }
+            });
+
+            await irysInstance.ready();
+            _irys  = irysInstance;
+            _ready = true;
+            return _irys;
+
+        } catch (err) {
+            console.error('_getIrys failed:', err.message, err.stack);
+            throw err;
         }
-
-        var irysInstance = new IrysClass({
-            url:   IRYS_NODE,
-            token: 'ethereum',
-            wallet: { provider: window.ethereum }
-        });
-
-        await irysInstance.ready();
-        _irys  = irysInstance;
-        _ready = true;
-        return _irys;
     }
 
     // ============================================

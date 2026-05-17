@@ -97,20 +97,7 @@ var ICPProvider = (function () {
         );
     }
 
-    /**
-     * Get AssetManager constructor.
-     */
-    function _getAssetManagerClass() {
-        if (typeof window.ic !== 'undefined' && window.ic.assets &&
-            window.ic.assets.AssetManager) {
-            return window.ic.assets.AssetManager;
-        }
-        if (typeof window.AssetManager !== 'undefined') {
-            return window.AssetManager;
-        }
-        // Not strictly required — we can fall back to raw canister calls
-        return null;
-    }
+
 
     // ============================================
     // Auth — Internet Identity
@@ -285,71 +272,31 @@ var ICPProvider = (function () {
             // Get identity from the existing client
             _identity = _authClient.getIdentity();
 
-            // ── 4. Build agent ────────────────────
-            var agent = await _buildAgent(_identity);
-
-            // ── 5. Read file as ArrayBuffer ───────
-            var buffer = await file.arrayBuffer();
-            var content = new Uint8Array(buffer);
-
             var safeName = sanitizeFileName(file.name);
-            var fileKey = '/' + safeName;
             var fileUrl = 'https://' + cId + '.icp0.io/' + safeName;
 
-            // ── 6. Upload ─────────────────────────
-            var AssetManager = _getAssetManagerClass();
+            // ── 6. Upload via raw HTTP PUT ────────
+            // ICP asset canisters accept direct HTTP PUT at their
+            // raw.icp0.io endpoint. This avoids needing Actor/IDL/candid
+            // which are not reliably available from browser CDN bundles.
+            var putUrl = 'https://' + cId + '.raw.icp0.io/' + safeName;
 
-            if (AssetManager) {
-                // Preferred path — @dfinity/assets
-                var assetMgr = new AssetManager({
-                    canisterId: cId,
-                    agent: agent
-                });
+            console.log('ICPProvider: uploading to', putUrl);
 
-                await assetMgr.store({
-                    key: fileKey,
-                    content_type: file.type || 'application/octet-stream',
-                    content: content
-                });
+            var response = await fetch(putUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': file.type || 'application/octet-stream'
+                },
+                body: file
+            });
 
-            } else {
-                // Fallback — raw Actor call with inline IDL
-                var Actor = (window.ic && window.ic.Actor) ? window.ic.Actor : null;
-                var IDL = (window.ic && window.ic.IDL) ? window.ic.IDL : null;
-                if (!Actor || !IDL) {
-                    throw new Error(
-                        'DFINITY Actor/IDL not available. ' +
-                        'Add @dfinity/candid CDN script to dashboard.html.'
-                    );
-                }
-
-                // Minimal asset canister IDL for store()
-                var storeArg = IDL.Record({
-                    key: IDL.Text,
-                    content_type: IDL.Text,
-                    content_encoding: IDL.Text,
-                    content: IDL.Vec(IDL.Nat8),
-                    sha256: IDL.Opt(IDL.Vec(IDL.Nat8))
-                });
-
-                var assetIdlFactory = function () {
-                    return IDL.Service({
-                        store: IDL.Func([storeArg], [], [])
-                    });
-                };
-
-                var actor = Actor.createActor(assetIdlFactory, {
-                    agent: agent,
-                    canisterId: cId
-                });
-
-                await actor.store({
-                    key: fileKey,
-                    content_type: file.type || 'application/octet-stream',
-                    content_encoding: 'identity',
-                    content: Array.from(content),
-                    sha256: []
-                });
+            if (!response.ok) {
+                var statusText = response.statusText || ('HTTP ' + response.status);
+                throw new Error(
+                    'ICP upload failed (' + statusText + '). ' +
+                    'Verify canister ID and that your identity has write access.'
+                );
             }
 
             // ── 7. Save to localStorage ───────────
