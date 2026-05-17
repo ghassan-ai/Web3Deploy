@@ -64,13 +64,12 @@ var ICPProvider = (function () {
 
     /**
      * Get the AuthClient constructor from the CDN-loaded global.
-     * @dfinity/auth-client CJS bundle exposes via window.ic.authClient
+     * @dfinity/auth-client UMD bundle exposes via window.ic.AuthClient
      */
     function _getAuthClientClass() {
-        // Primary: window.ic namespace (CJS CDN bundle)
-        if (typeof window.ic !== 'undefined' && window.ic.authClient &&
-            window.ic.authClient.AuthClient) {
-            return window.ic.authClient.AuthClient;
+        // Primary: window.ic namespace (UMD CDN bundle)
+        if (typeof window.ic !== 'undefined' && window.ic.AuthClient) {
+            return window.ic.AuthClient;
         }
         // Fallback: bare global
         if (typeof window.AuthClient !== 'undefined') {
@@ -86,9 +85,8 @@ var ICPProvider = (function () {
      * Get HttpAgent constructor.
      */
     function _getHttpAgentClass() {
-        if (typeof window.ic !== 'undefined' && window.ic.agent &&
-            window.ic.agent.HttpAgent) {
-            return window.ic.agent.HttpAgent;
+        if (typeof window.ic !== 'undefined' && window.ic.HttpAgent) {
+            return window.ic.HttpAgent;
         }
         if (typeof window.HttpAgent !== 'undefined') {
             return window.HttpAgent;
@@ -316,16 +314,14 @@ var ICPProvider = (function () {
 
             } else {
                 // Fallback — raw Actor call with inline IDL
-                var agentLib = (window.ic && window.ic.agent) ? window.ic.agent : null;
-                if (!agentLib || !agentLib.Actor || !agentLib.IDL) {
+                var Actor = (window.ic && window.ic.Actor) ? window.ic.Actor : null;
+                var IDL = (window.ic && window.ic.IDL) ? window.ic.IDL : null;
+                if (!Actor || !IDL) {
                     throw new Error(
                         'DFINITY Actor/IDL not available. ' +
                         'Add @dfinity/candid CDN script to dashboard.html.'
                     );
                 }
-
-                var Actor = agentLib.Actor;
-                var IDL = agentLib.IDL;
 
                 // Minimal asset canister IDL for store()
                 var storeArg = IDL.Record({

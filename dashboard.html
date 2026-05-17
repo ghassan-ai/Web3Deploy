@@ -11,48 +11,39 @@
         content="script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://esm.sh https://arweave.net https://node2.irys.xyz https://gateway.irys.xyz https://ic0.app blob:; connect-src * 'unsafe-inline'; worker-src 'self' blob:;">
     <link rel="stylesheet" href="css/style.css">
 
-    <!-- ========== 1. Import Map (MUST BE FIRST) ========== -->
-    <script type="importmap">
-    {
-        "imports": {
-            "buffer": "https://esm.sh/buffer@6.0.3",
-            "buffer/": "https://esm.sh/buffer@6.0.3/",
-            "@dfinity/candid": "https://esm.sh/@dfinity/candid@2.1.0?external=buffer",
-            "@dfinity/agent": "https://esm.sh/@dfinity/agent@2.1.0?external=buffer",
-            "@dfinity/auth-client": "https://esm.sh/@dfinity/auth-client@2.1.0?external=buffer",
-            "@dfinity/principal": "https://esm.sh/@dfinity/principal@2.1.0?external=buffer"
-        }
-    }
-    </script>
-
-    <!-- ========== 2. Global Polyfills (Buffer & Process) ========== -->
-    <script type="module">
-        import { Buffer } from 'buffer';
-        window.Buffer = window.Buffer || Buffer;
-        window.process = { env: {} };
-    </script>
-
-    <!-- ========== 3. Web3 Provider SDKs ========== -->
+    <!-- ========== 1. Web3 Provider SDKs ========== -->
     <!-- Ethers v6 — MetaMask wallet -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
 
     <!-- Irys — Arweave uploads paid in ETH via MetaMask -->
     <script type="module">
-        import { WebUploader } from 'https://esm.sh/@irys/web-upload@0.0.15?bundle-deps';
-        window.WebIrys = WebUploader;
+        try {
+            const mod = await import('https://esm.sh/@irys/web-upload@0.0.15?bundle-deps');
+            window.WebIrys = mod.default || mod.WebUploader || mod;
+            console.log('✓ WebIrys loaded');
+        } catch(e) {
+            console.error('WebIrys load failed:', e);
+        }
     </script>
 
-    <!-- DFINITY — ICP asset canister uploads -->
+    <!-- DFINITY — ICP (ESM via esm.sh, pinned deps to avoid candid export conflicts) -->
     <script type="module">
         try {
-            const agent = await import('@dfinity/agent');
-            const authClient = await import('@dfinity/auth-client');
+            var _deps = 'deps=@dfinity/candid@2.1.0,@dfinity/principal@2.1.0,@dfinity/agent@2.1.0';
+            const [agent, authClient, principal] = await Promise.all([
+                import('https://esm.sh/@dfinity/agent@2.1.0?no-dts&bundle-deps&' + _deps),
+                import('https://esm.sh/@dfinity/auth-client@2.1.0?no-dts&bundle-deps&' + _deps),
+                import('https://esm.sh/@dfinity/principal@2.1.0?no-dts&bundle-deps&' + _deps)
+            ]);
             window.ic = window.ic || {};
-            window.ic.agent = { HttpAgent: agent.HttpAgent, Actor: agent.Actor, IDL: agent.IDL };
-            window.ic.authClient = { AuthClient: authClient.AuthClient };
-            console.info('[Web3Deploy] All remote SDKs loaded correctly.');
-        } catch (e) {
-            console.warn('[Web3Deploy] Remote SDK load error:', e.message);
+            window.ic.HttpAgent = agent.HttpAgent;
+            window.ic.Actor = agent.Actor;
+            window.ic.IDL = agent.IDL;
+            window.ic.AuthClient = authClient.AuthClient;
+            window.ic.Principal = principal.Principal;
+            console.log('✓ DFINITY SDK loaded');
+        } catch(e) {
+            console.error('DFINITY SDK load failed:', e);
         }
     </script>
 </head>
