@@ -150,35 +150,17 @@ var ArweaveProvider = (function () {
             // which export key the esm.sh bundle provides.
             console.log('WebIrys shape:', Object.keys(window.WebIrys || {}));
 
-            // @irys/web-upload@0.0.15 via esm.sh may export the constructor
-            // under different keys depending on bundle configuration.
-            // Try every known shape before giving up.
-            var Ctor = null;
+            var mod = window.WebIrys;
+            var Ctor = mod?.WebIrys 
+                    || mod?.WebUploader 
+                    || mod?.default?.WebIrys
+                    || mod?.default?.WebUploader
+                    || mod?.default
+                    || mod;
 
-            if (window.WebIrys) {
-                Ctor = window.WebIrys.WebIrys      // named export WebIrys
-                    || window.WebIrys.WebUploader   // named export WebUploader
-                    || window.WebIrys.default        // default export
-                    || (typeof window.WebIrys === 'function' ? window.WebIrys : null);
-            }
-
-            // Secondary globals that other CDN setups might use
-            if (!Ctor && window.IrysWebUpload) {
-                Ctor = window.IrysWebUpload.WebIrys
-                    || window.IrysWebUpload.WebUploader
-                    || window.IrysWebUpload.default
-                    || (typeof window.IrysWebUpload === 'function' ? window.IrysWebUpload : null);
-            }
-
-            if (!Ctor && typeof window.Irys === 'function') {
-                Ctor = window.Irys;
-            }
-
-            if (!Ctor || typeof Ctor !== 'function') {
-                throw new Error(
-                    'Irys SDK not loaded. Ensure the @irys/web-upload CDN script is in dashboard.html. ' +
-                    'window.WebIrys keys: ' + Object.keys(window.WebIrys || {}).join(', ')
-                );
+            if (typeof Ctor !== 'function') {
+                console.error('WebIrys shape:', Object.keys(mod || {}));
+                throw new Error('WebIrys constructor not found');
             }
 
             console.log('Using Irys constructor:', Ctor.name || 'anonymous');

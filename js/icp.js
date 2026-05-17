@@ -243,8 +243,8 @@ var ICPProvider = (function () {
         }
 
         // ── 2. Resolve canister ID ────────────────
-        var cId = getCanisterId();
-        if (!cId) {
+        var canisterId = localStorage.getItem('web3deploy_icp_canister_id');
+        if (!canisterId) {
             return {
                 success: false,
                 url: null,
@@ -263,7 +263,7 @@ var ICPProvider = (function () {
                     return {
                         success: false,
                         url: null,
-                        canisterId: cId,
+                        canisterId: canisterId,
                         error: 'Authentication required.'
                     };
                 }
@@ -272,14 +272,14 @@ var ICPProvider = (function () {
             // Get identity from the existing client
             _identity = _authClient.getIdentity();
 
-            var safeName = sanitizeFileName(file.name);
-            var fileUrl = 'https://' + cId + '.icp0.io/' + safeName;
+            var fileName = sanitizeFileName(file.name);
+            var fileUrl = 'https://' + canisterId + '.icp0.io/' + fileName;
 
             // ── 6. Upload via raw HTTP PUT ────────
             // ICP asset canisters accept direct HTTP PUT at their
             // raw.icp0.io endpoint. This avoids needing Actor/IDL/candid
             // which are not reliably available from browser CDN bundles.
-            var putUrl = 'https://' + cId + '.raw.icp0.io/' + safeName;
+            var putUrl = 'https://' + canisterId + '.raw.icp0.io/' + fileName;
 
             console.log('ICPProvider: uploading to', putUrl);
 
@@ -306,13 +306,13 @@ var ICPProvider = (function () {
                 size: file.size,
                 date: new Date().toISOString(),
                 provider: 'icp',
-                canisterId: cId
+                canisterId: canisterId
             });
 
             return {
                 success: true,
                 url: fileUrl,
-                canisterId: cId,
+                canisterId: canisterId,
                 error: null
             };
 
@@ -347,7 +347,7 @@ var ICPProvider = (function () {
             return {
                 success: false,
                 url: null,
-                canisterId: cId || null,
+                canisterId: canisterId || null,
                 error: msg
             };
         }

@@ -519,9 +519,9 @@
                 if (dupIdx === -1) {
                     keys.push({
                         provider: 'arweave',
-                        key:      'metamask_irys',
+                        key: 'metamask_irys',
                         verified: false,
-                        addedAt:  new Date().toISOString()
+                        addedAt: new Date().toISOString()
                     });
                     saveKeys(keys);
                     setActiveIndex(keys.length - 1);
@@ -561,9 +561,9 @@
                 if (dupIdx === -1) {
                     keys.push({
                         provider: 'icp',
-                        key:      canisterId,
+                        key: canisterId,
                         verified: false,
-                        addedAt:  new Date().toISOString()
+                        addedAt: new Date().toISOString()
                     });
                     saveKeys(keys);
                     setActiveIndex(keys.length - 1);
@@ -718,8 +718,8 @@
         function fmtBytes(b) {
             if (typeof PinataAPI !== 'undefined') return PinataAPI.formatBytes(b);
             if (b === 0) return '0 B';
-            var s = ['B','KB','MB','GB']; var i = Math.floor(Math.log(b)/Math.log(1024));
-            return (b/Math.pow(1024,i)).toFixed(i>1?2:0)+' '+s[i];
+            var s = ['B', 'KB', 'MB', 'GB']; var i = Math.floor(Math.log(b) / Math.log(1024));
+            return (b / Math.pow(1024, i)).toFixed(i > 1 ? 2 : 0) + ' ' + s[i];
         }
 
         function fmtTime(seconds) {
@@ -730,12 +730,12 @@
 
         function fileIcon(name) {
             var ext = (name.split('.').pop() || '').toLowerCase();
-            if (['html','htm'].indexOf(ext) !== -1) return '🌐';
+            if (['html', 'htm'].indexOf(ext) !== -1) return '🌐';
             if (['css'].indexOf(ext) !== -1) return '🎨';
-            if (['js','ts'].indexOf(ext) !== -1) return '⚙️';
-            if (['png','jpg','jpeg','gif','svg','webp'].indexOf(ext) !== -1) return '🖼️';
+            if (['js', 'ts'].indexOf(ext) !== -1) return '⚙️';
+            if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].indexOf(ext) !== -1) return '🖼️';
             if (['json'].indexOf(ext) !== -1) return '📋';
-            if (['md','txt'].indexOf(ext) !== -1) return '📄';
+            if (['md', 'txt'].indexOf(ext) !== -1) return '📄';
             return '📁';
         }
 
@@ -818,8 +818,8 @@
                 div.innerHTML =
                     '<span class="file-item-icon">' + fileIcon(entry.file.name) + '</span>' +
                     '<div class="file-item-info">' +
-                        '<div class="file-item-name">' + entry.file.name + '</div>' +
-                        (entry.path !== entry.file.name ? '<div class="file-item-path">' + entry.path + '</div>' : '') +
+                    '<div class="file-item-name">' + entry.file.name + '</div>' +
+                    (entry.path !== entry.file.name ? '<div class="file-item-path">' + entry.path + '</div>' : '') +
                     '</div>' +
                     '<span class="file-item-size">' + fmtBytes(entry.file.size) + '</span>';
                 fileListScroll.appendChild(div);
@@ -1018,7 +1018,7 @@
                 var toggles = document.querySelectorAll('[id^="arweaveBackupToggle"]');
                 var hints = document.querySelectorAll('[id^="arweaveWalletHint"]');
                 var isArweaveChecked = false;
-                toggles.forEach(function(t) { if (t.checked) isArweaveChecked = true; });
+                toggles.forEach(function (t) { if (t.checked) isArweaveChecked = true; });
 
                 var arweaveResultField = document.getElementById('arweaveResultField');
                 var arweaveStatus = document.getElementById('arweaveStatus');
@@ -1027,7 +1027,7 @@
                 if (isArweaveChecked && active.provider === 'pinata') {
                     // Check if ArweaveProvider is configured (exists in saved keys)
                     var savedKeys = getSavedKeys();
-                    var hasArweaveKey = savedKeys.some(function(k) { return k.provider === 'arweave'; });
+                    var hasArweaveKey = savedKeys.some(function (k) { return k.provider === 'arweave'; });
 
                     if (hasArweaveKey && typeof ArweaveProvider !== 'undefined') {
                         if (arweaveResultField) arweaveResultField.style.display = 'block';
@@ -1039,7 +1039,7 @@
 
                         var fileToUpload = selectedFiles[0].file;
                         ArweaveProvider.upload(fileToUpload)
-                            .then(function(backupRes) {
+                            .then(function (backupRes) {
                                 if (backupRes.success) {
                                     if (arweaveStatus) {
                                         arweaveStatus.textContent = '✓ Permanently Archived';
@@ -1056,7 +1056,7 @@
                                     }
                                 }
                             })
-                            .catch(function(err) {
+                            .catch(function (err) {
                                 console.warn('Arweave backup failed:', err);
                                 if (arweaveStatus) {
                                     arweaveStatus.textContent = '⚠️ Backup failed';
@@ -1064,13 +1064,13 @@
                                 }
                             });
                     } else {
-                        hints.forEach(function(h) { h.style.display = 'block'; });
-                        toggles.forEach(function(t) { t.checked = false; });
+                        hints.forEach(function (h) { h.style.display = 'block'; });
+                        toggles.forEach(function (t) { t.checked = false; });
                         if (arweaveResultField) arweaveResultField.style.display = 'none';
                     }
                 } else {
                     if (arweaveResultField) arweaveResultField.style.display = 'none';
-                    hints.forEach(function(h) { h.style.display = 'none'; });
+                    hints.forEach(function (h) { h.style.display = 'none'; });
                 }
 
                 // --- Persist to IPFS index (Pinata only — Arweave/ICP save to localStorage in their own modules) ---
@@ -1082,10 +1082,10 @@
                     for (var s = 0; s < selectedFiles.length; s++) totalSize += selectedFiles[s].file.size;
                     var ext = (uploadName.split('.').pop() || '').toLowerCase();
                     var ftype = 'other';
-                    if (['html','htm'].indexOf(ext) !== -1) ftype = 'html';
-                    else if (['png','jpg','jpeg','gif','svg','webp','ico'].indexOf(ext) !== -1) ftype = 'image';
-                    else if (['js','ts','mjs'].indexOf(ext) !== -1) ftype = 'js';
-                    else if (['css','scss','less'].indexOf(ext) !== -1) ftype = 'css';
+                    if (['html', 'htm'].indexOf(ext) !== -1) ftype = 'html';
+                    else if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico'].indexOf(ext) !== -1) ftype = 'image';
+                    else if (['js', 'ts', 'mjs'].indexOf(ext) !== -1) ftype = 'js';
+                    else if (['css', 'scss', 'less'].indexOf(ext) !== -1) ftype = 'css';
 
                     var fileInfo = {
                         name: uploadName,
