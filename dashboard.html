@@ -15,21 +15,8 @@
     <!-- Ethers v6 — MetaMask wallet -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
 
-    <!-- Irys — Arweave uploads paid in ETH via MetaMask -->
-    <script type="module">
-        try {
-            const mod = await import('https://esm.sh/@irys/web-upload-ethereum@0.0.15?bundle-deps');
-            console.log('Irys mod keys:', Object.keys(mod));
-            window.WebIrys = mod.WebIrys 
-                          || mod.WebUploader
-                          || mod.default?.WebIrys
-                          || mod.default?.WebUploader  
-                          || mod.default;
-            console.log('WebIrys assigned:', typeof window.WebIrys);
-        } catch(e) {
-            console.error('Irys load failed:', e.message);
-        }
-    </script>
+    <!-- Arweave JS — Native Arweave uploads -->
+    <script src="https://unpkg.com/arweave@1.14.4/bundles/web.bundle.min.js"></script>
 
     <!-- DFINITY — ICP (ESM via esm.sh, pinned deps to avoid candid export conflicts) -->
     <script type="module">
