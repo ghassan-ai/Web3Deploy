@@ -1,6 +1,6 @@
 // ============================================
 // Web3Deploy — ArweaveProvider
-// Permanent file storage on Arweave via Bundlr
+// Permanent file storage on Arweave via Turbo SDK
 // Paid in ETH through MetaMask
 // ============================================
 
@@ -8,14 +8,12 @@ var ArweaveProvider = (function () {
     'use strict';
 
     // ── Constants ────────────────────────────────
-    var BUNDLR_NODE  = 'https://node2.bundlr.network';
     var AR_GATEWAY   = 'https://arweave.net/';
     var LS_FILES     = 'web3deploy_files';
     var MAX_FILE_BYTES = 100 * 1024 * 1024; // 100 MB
 
     // ── Internal state ──────────────────────────
-    var _bundlr = null;
-    var _ready  = false;
+    var _turbo = null;
 
     // ============================================
     // Helpers
@@ -48,21 +46,6 @@ var ArweaveProvider = (function () {
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
-    }
-
-    /**
-     * Convert atomic (wei-style) bigint to a short ETH string.
-     */
-    function formatEth(atomicValue) {
-        var str = String(atomicValue);
-        str = str.replace(/[^0-9]/g, '');
-        if (!str) return '0';
-
-        while (str.length <= 18) str = '0' + str;
-        var intPart  = str.slice(0, str.length - 18) || '0';
-        var fracPart = str.slice(str.length - 18).replace(/0+$/, '');
-        if (!fracPart) return intPart;
-        return intPart + '.' + fracPart.slice(0, 8);
     }
 
     // ============================================
@@ -129,30 +112,26 @@ var ArweaveProvider = (function () {
     }
 
     // ============================================
-    // Bundlr initialisation (lazy)
+    // Turbo initialisation
     // ============================================
 
-    async function _getBundlr() {
-        if (_bundlr && _ready) return _bundlr;
-
+    async function _getTurbo() {
+        if (_turbo) return _turbo;
+        
+        if (typeof window.TurboFactory === 'undefined') {
+            throw new Error('Turbo SDK not loaded. Check dashboard.html.');
+        }
         if (typeof window.ethereum === 'undefined') {
-            throw new Error('MetaMask not found. Please install MetaMask to use Arweave storage.');
+            throw new Error('MetaMask not found.');
         }
 
-        if (typeof window.WebBundlr === 'undefined') {
-            throw new Error('Bundlr SDK not loaded. Check dashboard.html script tags.');
-        }
-
-        try {
-            var bundlrInstance = new window.WebBundlr(BUNDLR_NODE, 'ethereum', window.ethereum);
-            await bundlrInstance.ready();
-            _bundlr = bundlrInstance;
-            _ready  = true;
-            return _bundlr;
-        } catch (err) {
-            console.error('_getBundlr failed:', err);
-            throw err;
-        }
+        var turbo = await window.TurboFactory.authenticated({
+            signer: window.ethereum,
+            token: 'ethereum'
+        });
+        
+        _turbo = turbo;
+        return _turbo;
     }
 
     // ============================================
@@ -167,33 +146,52 @@ var ArweaveProvider = (function () {
         }
 
         setTimeout(function () {
-            if (typeof window.WebBundlr === 'undefined') {
-                console.error('ArweaveProvider WARNING: window.WebBundlr is undefined. Arweave uploads will fail.');
+            if (typeof window.TurboFactory === 'undefined') {
+                console.error('ArweaveProvider WARNING: window.TurboFactory is undefined. Arweave uploads will fail.');
             }
         }, 3000);
     }
 
     async function getBalance() {
-        var bundlr = await _getBundlr();
-        var atomicBalance = await bundlr.getLoadedBalance();
-        return formatEth(atomicBalance);
+        try {
+            var turbo = await _getTurbo();
+            var result = await turbo.getBalance();
+            var winc = result[0].winc;
+            var eth = (Number(winc) / 1e12).toFixed(6);
+            return eth;
+        } catch(e) {
+            return '0';
+        }
     }
 
     async function estimateCost(bytes) {
-        var bundlr = await _getBundlr();
-        var atomicPrice = await bundlr.getPrice(bytes);
-        return formatEth(atomicPrice);
+        try {
+            var turbo = await _getTurbo();
+            var result = await turbo.getUploadCosts({ bytes: [bytes] });
+            // result[0].winc = cost in winston credits
+            // Convert to ETH for display
+            var winc = result[0].winc;
+            var eth = (Number(winc) / 1e12).toFixed(6);
+            return eth;
+        } catch(e) {
+            return '~0.001';
+        }
     }
 
-    async function fund(ethAmount) {
-        var bundlr = await _getBundlr();
-        var atomic = bundlr.utils.toAtomic(String(ethAmount));
-        return bundlr.fund(atomic);
+    async function fund(amount) {
+        var turbo = await _getTurbo();
+        if (turbo.topUpWithTokens) {
+            return await turbo.topUpWithTokens({ tokenAmount: amount, tokenType: 'ethereum' });
+        } else if (turbo.fund) {
+            return await turbo.fund({ amount: amount, token: 'ethereum' });
+        } else {
+            throw new Error('Turbo funding method not found');
+        }
     }
 
     async function upload(file) {
         if (file.size > MAX_FILE_BYTES) {
-            return { success: false, url: null, txId: null, error: 'File exceeds 100 MB limit.' };
+            return { success: false, url: null, txId: null, error: 'File exceeds 100MB limit.' };
         }
 
         if (typeof WalletAuth !== 'undefined' && !WalletAuth.isConnected()) {
@@ -201,30 +199,26 @@ var ArweaveProvider = (function () {
         }
 
         try {
-            var bundlr = await _getBundlr();
-
-            var atomicPrice = await bundlr.getPrice(file.size);
-            var costEthStr  = formatEth(atomicPrice);
-
-            await showCostModal(costEthStr, file.name);
-
-            var balance = await bundlr.getLoadedBalance();
-            if (BigInt(balance.toString()) < BigInt(atomicPrice.toString())) {
-                var needed = BigInt(atomicPrice.toString()) + BigInt(atomicPrice.toString()) / BigInt(10);
-                await bundlr.fund(needed.toString());
-            }
-
-            var tags = [
-                { name: 'Content-Type', value: file.type || 'application/octet-stream' },
-                { name: 'App-Name',     value: 'Web3Deploy' },
-                { name: 'File-Name',    value: file.name }
-            ];
+            var turbo = await _getTurbo();
+            var cost = await estimateCost(file.size);
+            
+            await showCostModal(cost, file.name);
 
             var fileBuffer = await file.arrayBuffer();
-            // Bundlr web requires a Buffer or Uint8Array. arrayBuffer usually works or we can pass Uint8Array.
-            var tx = await bundlr.upload(new Uint8Array(fileBuffer), { tags: tags });
+            
+            var result = await turbo.uploadFile({
+                fileStreamFactory: () => new Blob([fileBuffer], { type: file.type }),
+                fileSizeFactory: () => file.size,
+                dataItemOpts: {
+                    tags: [
+                        { name: 'Content-Type', value: file.type || 'application/octet-stream' },
+                        { name: 'App-Name', value: 'Web3Deploy' },
+                        { name: 'File-Name', value: file.name }
+                    ]
+                }
+            });
 
-            var txId = tx.id;
+            var txId = result.id;
             var url  = AR_GATEWAY + txId;
 
             saveFile({
@@ -250,13 +244,13 @@ var ArweaveProvider = (function () {
                 } else if (err.code === 4001 || m.indexOf('rejected') !== -1 || m.indexOf('4001') !== -1) {
                     msg = 'Upload cancelled.';
                 } else if (m.indexOf('insufficient') !== -1 || m.indexOf('balance') !== -1) {
-                    msg = 'Insufficient ETH. Fund your wallet first.';
+                    msg = 'Insufficient balance. Fund your Turbo wallet.';
                 } else if (m.indexOf('network') !== -1 || m.indexOf('fetch') !== -1) {
                     msg = 'Network error. Please try again.';
                 } else if (m.indexOf('MetaMask') !== -1 || m.indexOf('not loaded') !== -1) {
                     msg = m;
                 } else {
-                    msg = 'Bundlr Error: ' + m;
+                    msg = 'Turbo Error: ' + m;
                 }
             }
 

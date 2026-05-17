@@ -15,16 +15,16 @@
     <!-- Ethers v6 — MetaMask wallet -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
 
-    <!-- Bundlr — Arweave uploads paid in ETH via MetaMask -->
+    <!-- Turbo SDK — Arweave uploads paid in ETH via MetaMask -->
     <script type="module">
         try {
-            const { WebBundlr } = await import(
-                'https://esm.sh/@bundlr-network/client@0.11.19/build/esm/web?bundle-deps'
+            const { TurboFactory } = await import(
+                'https://esm.sh/@ardrive/turbo-sdk@1.22.0/browser?bundle-deps'
             );
-            window.WebBundlr = WebBundlr;
-            console.log('✓ Bundlr loaded');
+            window.TurboFactory = TurboFactory;
+            console.log('✓ Turbo SDK loaded');
         } catch(e) {
-            console.error('Bundlr load failed:', e.message);
+            console.error('Turbo load failed:', e.message);
         }
     </script>
 
