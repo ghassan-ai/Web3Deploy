@@ -22,27 +22,6 @@ var StorageProviders = (function () {
             setupFields: [
                 { key: 'web3deploy_pinata_jwt', label: 'Pinata JWT Token', type: 'password', placeholder: 'eyJ...' }
             ]
-        },
-        arweave: {
-            name:        'Arweave',
-            icon:        '🌿',
-            type:        'permanent',
-            gateway:     'https://arweave.net/',
-            description: 'Permanent storage on Arweave. Pay once in ETH via MetaMask.',
-            docsUrl:     'https://docs.bundlr.network',
-            setupFields: [] // No API key — uses MetaMask
-        },
-        icp: {
-            name:        'ICP',
-            icon:        '∞',
-            type:        'canister',
-            gateway:     'https://{canisterId}.icp0.io/',
-            description: 'Store files on Internet Computer asset canister.',
-            docsUrl:     'https://internetcomputer.org/docs',
-            setupFields: [
-                { key: 'web3deploy_icp_canister_id', label: 'Canister ID', type: 'text',
-                  placeholder: 'xxxxx-xxxxx-xxxxx-xxxxx-xxx' }
-            ]
         }
     };
 
@@ -126,34 +105,14 @@ var StorageProviders = (function () {
         }
     });
 
-    // ============================================
-    // Arweave/Irys Adapter
-    // ============================================
-
-    var arweaveAdapter = buildAdapter('arweave', {
-        name:       'Arweave',
-        gatewayUrl: 'https://arweave.net/'
-    });
-
-    // ============================================
-    // ICP Adapter
-    // ============================================
-
-    var icpAdapter = buildAdapter('icp', {
-        name:       'ICP',
-        gatewayUrl: 'https://icp0.io/'
-    });
+    // (Removed Arweave and ICP adapters)
 
     // ============================================
     // getAdapter — returns normalised adapter by ID
     // ============================================
 
     function getAdapter(providerId) {
-        switch (providerId) {
-            case 'arweave':    return arweaveAdapter;
-            case 'icp':        return icpAdapter;
-            default:           return pinataAdapter;
-        }
+        return pinataAdapter;
     }
 
     // ============================================
@@ -164,31 +123,7 @@ var StorageProviders = (function () {
         return PROVIDERS[providerId] || null;
     }
 
-    // ============================================
-    // uploadArweave — convenience helper
-    // ============================================
-
-    async function uploadArweave(file) {
-        if (typeof ArweaveProvider !== 'undefined' && ArweaveProvider.upload) {
-            var result = await ArweaveProvider.upload(file);
-            if (!result.success) throw new Error(result.error || 'Arweave upload failed.');
-            return { txId: result.txId, url: result.url };
-        }
-        throw new Error('ArweaveProvider not loaded. Check that js/arweave.js is included.');
-    }
-
-    // ============================================
-    // uploadICP — convenience helper
-    // ============================================
-
-    async function uploadICP(file, canisterId) {
-        if (typeof ICPProvider === 'undefined') {
-            throw new Error('ICPProvider not loaded. Check that js/icp.js is included.');
-        }
-        var result = await ICPProvider.upload(file, canisterId);
-        if (!result.success) throw new Error(result.error || 'ICP upload failed.');
-        return { url: result.url };
-    }
+    // (Removed uploadArweave and uploadICP helpers)
 
     // ============================================
     // unpinBulk — shared bulk-unpin with fallback
@@ -223,9 +158,7 @@ var StorageProviders = (function () {
         getAdapter:          getAdapter,
         getProvider:         getProvider,
         unpinBulk:           unpinBulk,
-        ensureTrailingSlash: ensureTrailingSlash,
-        uploadArweave:       uploadArweave,
-        uploadICP:           uploadICP
+        ensureTrailingSlash: ensureTrailingSlash
     };
 
 })();

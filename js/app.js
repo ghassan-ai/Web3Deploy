@@ -21,20 +21,6 @@
                 'Authorization': 'Bearer ' + key
             })
         },
-        arweave: {
-            name: 'Arweave',
-            icon: '🌿',
-            verifyUrl: null,
-            hint: 'Uses MetaMask to pay in ETH via Irys. <a href="https://metamask.io/download/" target="_blank" rel="noopener">Install MetaMask</a> → Connect wallet above → select Arweave to upload.',
-            buildHeaders: null
-        },
-        icp: {
-            name: 'ICP',
-            icon: '∞',
-            verifyUrl: null,
-            hint: 'Enter your ICP asset canister ID below. Deploy one with: <code>dfx deploy --network ic</code>. Auth via <a href="https://identity.ic0.app" target="_blank" rel="noopener">Internet Identity</a>.',
-            buildHeaders: null
-        }
     };
 
 
@@ -257,11 +243,6 @@
                 FileManager.prefetchIndex();
             }
 
-            // ADDED — Initialize new providers
-            if (typeof ArweaveProvider !== 'undefined') ArweaveProvider.init();
-            if (typeof ICPProvider !== 'undefined') ICPProvider.init();
-        }
-
         // -------------------------------------------
         // Tab Switching
         // -------------------------------------------
@@ -417,41 +398,15 @@
             if (providerHint && config) {
                 providerHint.innerHTML = config.hint;
             }
-            if (provider === 'arweave') {
-                // Arweave now uses MetaMask/Irys — no wallet JSON file needed
-                // Keep the input hidden; show an info row instead
-                apiKeyInput.type = 'text';
-                apiKeyInput.value = 'Uses MetaMask — no API key required';
-                apiKeyInput.readOnly = true;
-                apiKeyInput.style.opacity = '0.5';
-                apiKeyInput.style.cursor = 'not-allowed';
-                toggleKeyVis.style.display = 'none';
-                var lblArw = document.querySelector('label[for="apiKeyInput"]');
-                if (lblArw) lblArw.textContent = 'Wallet Configured';
-            } else if (provider === 'icp') {
-                // ICP: ask for canister ID
-                apiKeyInput.type = 'text';
-                apiKeyInput.readOnly = false;
-                apiKeyInput.style.opacity = '1';
-                apiKeyInput.style.cursor = '';
-                apiKeyInput.removeAttribute('accept');
-                apiKeyInput.placeholder = 'Enter your canister ID (e.g. rrkah-fqaaa-aaaaa-aaaaq-cai)';
-                apiKeyInput.value = localStorage.getItem('web3deploy_icp_canister_id') || '';
-                toggleKeyVis.style.display = 'none';
-                // Update label
-                var lblIcp = document.querySelector('label[for="apiKeyInput"]');
-                if (lblIcp) lblIcp.textContent = 'Canister ID';
-            } else {
-                apiKeyInput.type = 'password';
-                apiKeyInput.readOnly = false;
-                apiKeyInput.style.opacity = '1';
-                apiKeyInput.style.cursor = '';
-                apiKeyInput.removeAttribute('accept');
-                apiKeyInput.placeholder = 'Paste your API key here…';
-                toggleKeyVis.style.display = 'block';
-                var lblDefault = document.querySelector('label[for="apiKeyInput"]');
-                if (lblDefault) lblDefault.textContent = 'API Key / JWT Token';
-            }
+            apiKeyInput.type = 'password';
+            apiKeyInput.readOnly = false;
+            apiKeyInput.style.opacity = '1';
+            apiKeyInput.style.cursor = '';
+            apiKeyInput.removeAttribute('accept');
+            apiKeyInput.placeholder = 'Paste your API key here…';
+            toggleKeyVis.style.display = 'block';
+            var lblDefault = document.querySelector('label[for="apiKeyInput"]');
+            if (lblDefault) lblDefault.textContent = 'API Key / JWT Token';
         }
 
         providerSelect.addEventListener('change', updateHint);
@@ -497,8 +452,6 @@
             if (provider === 'pinata') {
                 return await verifyPinataKey(apiKey);
             }
-            // Pinata is the only IPFS provider that needs key verification.
-            // Arweave and ICP don't reach this code path (handled earlier).
             return false;
         }
 
@@ -509,75 +462,6 @@
             e.preventDefault();
 
             const provider = providerSelect.value;
-
-            // ── Arweave via Irys (MetaMask — no wallet file) ──
-            if (provider === 'arweave') {
-                // Register Arweave as a saved provider with a sentinel key
-                const keys = getSavedKeys();
-                let dupIdx = keys.findIndex(k => k.provider === 'arweave');
-
-                if (dupIdx === -1) {
-                    keys.push({
-                        provider: 'arweave',
-                        key: 'metamask_irys',
-                        verified: false,
-                        addedAt: new Date().toISOString()
-                    });
-                    saveKeys(keys);
-                    setActiveIndex(keys.length - 1);
-                } else {
-                    setActiveIndex(dupIdx);
-                }
-
-                // Initialise ArweaveProvider (checks MetaMask)
-                if (typeof ArweaveProvider !== 'undefined') {
-                    ArweaveProvider.init();
-                }
-
-                showMessage('✓ Arweave (Irys) configured — MetaMask will be used for payments.', 'success');
-                setTimeout(() => { showDashboard(); }, 1000);
-                return;
-            }
-
-            // ── ICP (Internet Computer — canister ID) ──
-            if (provider === 'icp') {
-                const canisterId = apiKeyInput.value.trim();
-                if (!canisterId) {
-                    showMessage('Please enter your ICP canister ID.', 'error');
-                    apiKeyInput.focus();
-                    return;
-                }
-
-                // Save canister ID
-                localStorage.setItem('web3deploy_icp_canister_id', canisterId);
-                if (typeof ICPProvider !== 'undefined') {
-                    ICPProvider.setCanisterId(canisterId);
-                    ICPProvider.init();
-                }
-
-                const keys = getSavedKeys();
-                let dupIdx = keys.findIndex(k => k.provider === 'icp');
-
-                if (dupIdx === -1) {
-                    keys.push({
-                        provider: 'icp',
-                        key: canisterId,
-                        verified: false,
-                        addedAt: new Date().toISOString()
-                    });
-                    saveKeys(keys);
-                    setActiveIndex(keys.length - 1);
-                } else {
-                    // Update canister ID in saved key
-                    keys[dupIdx].key = canisterId;
-                    saveKeys(keys);
-                    setActiveIndex(dupIdx);
-                }
-
-                showMessage('✓ ICP canister saved. You\'ll authenticate with Internet Identity on first upload.', 'success');
-                setTimeout(() => { showDashboard(); }, 1000);
-                return;
-            }
 
             const apiKey = apiKeyInput.value.trim();
 
@@ -975,24 +859,7 @@
                 var result;
 
                 // Route upload to the correct provider
-                if (active.provider === 'arweave') {
-                    // Arweave: upload via ArweaveProvider (MetaMask/Irys)
-                    if (typeof ArweaveProvider === 'undefined') throw { type: 'config', message: 'ArweaveProvider not loaded.' };
-                    showIndeterminateProgress('Arweave');
-                    var arRes = await ArweaveProvider.upload(selectedFiles[0].file);
-                    if (!arRes.success) throw { type: 'upload', message: arRes.error };
-                    result = { cid: arRes.txId, gatewayUrl: arRes.url, size: selectedFiles[0].file.size };
-
-                } else if (active.provider === 'icp') {
-                    // ICP: upload via ICPProvider (Internet Identity)
-                    if (typeof ICPProvider === 'undefined') throw { type: 'config', message: 'ICPProvider not loaded.' };
-                    showIndeterminateProgress('ICP');
-                    var icpRes = await ICPProvider.upload(selectedFiles[0].file);
-                    if (!icpRes.success) throw { type: 'upload', message: icpRes.error };
-                    result = { cid: icpRes.canisterId, gatewayUrl: icpRes.url, size: selectedFiles[0].file.size };
-
-                } else {
-                    // Pinata (only remaining IPFS provider)
+                if (active.provider === 'pinata') {
                     result = await PinataAPI.upload(selectedFiles, {
                         apiKey: active.key,
                         pinName: pinName.trim(),
@@ -1014,66 +881,7 @@
                 resultLink.href = result.gatewayUrl;
                 openLinkBtn.href = result.gatewayUrl;
 
-                // --- Handle Arweave Backup (only for Pinata uploads) ---
-                var toggles = document.querySelectorAll('[id^="arweaveBackupToggle"]');
-                var hints = document.querySelectorAll('[id^="arweaveWalletHint"]');
-                var isArweaveChecked = false;
-                toggles.forEach(function (t) { if (t.checked) isArweaveChecked = true; });
-
-                var arweaveResultField = document.getElementById('arweaveResultField');
-                var arweaveStatus = document.getElementById('arweaveStatus');
-                var arweaveLink = document.getElementById('arweaveLink');
-
-                if (isArweaveChecked && active.provider === 'pinata') {
-                    // Check if ArweaveProvider is configured (exists in saved keys)
-                    var savedKeys = getSavedKeys();
-                    var hasArweaveKey = savedKeys.some(function (k) { return k.provider === 'arweave'; });
-
-                    if (hasArweaveKey && typeof ArweaveProvider !== 'undefined') {
-                        if (arweaveResultField) arweaveResultField.style.display = 'block';
-                        if (arweaveStatus) {
-                            arweaveStatus.textContent = 'Uploading...';
-                            arweaveStatus.style.color = '';
-                        }
-                        if (arweaveLink) arweaveLink.style.display = 'none';
-
-                        var fileToUpload = selectedFiles[0].file;
-                        ArweaveProvider.upload(fileToUpload)
-                            .then(function (backupRes) {
-                                if (backupRes.success) {
-                                    if (arweaveStatus) {
-                                        arweaveStatus.textContent = '✓ Permanently Archived';
-                                        arweaveStatus.style.color = '#00ff88';
-                                    }
-                                    if (arweaveLink) {
-                                        arweaveLink.href = backupRes.url;
-                                        arweaveLink.style.display = 'inline-flex';
-                                    }
-                                } else {
-                                    if (arweaveStatus) {
-                                        arweaveStatus.textContent = '⚠️ Backup failed: ' + (backupRes.error || 'Unknown error');
-                                        arweaveStatus.style.color = '#ff5566';
-                                    }
-                                }
-                            })
-                            .catch(function (err) {
-                                console.warn('Arweave backup failed:', err);
-                                if (arweaveStatus) {
-                                    arweaveStatus.textContent = '⚠️ Backup failed';
-                                    arweaveStatus.style.color = '#ff5566';
-                                }
-                            });
-                    } else {
-                        hints.forEach(function (h) { h.style.display = 'block'; });
-                        toggles.forEach(function (t) { t.checked = false; });
-                        if (arweaveResultField) arweaveResultField.style.display = 'none';
-                    }
-                } else {
-                    if (arweaveResultField) arweaveResultField.style.display = 'none';
-                    hints.forEach(function (h) { h.style.display = 'none'; });
-                }
-
-                // --- Persist to IPFS index (Pinata only — Arweave/ICP save to localStorage in their own modules) ---
+                // --- Persist to IPFS index (Pinata only) ---
                 if (active.provider === 'pinata' &&
                     typeof IpfsIndex !== 'undefined' &&
                     typeof WalletAuth !== 'undefined' && WalletAuth.isConnected()) {

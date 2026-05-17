@@ -32,31 +32,9 @@ function populateCids(){
 var key=getActiveKey();if(!key)return;
 resolveAdapter();
 
-// Build option list from localStorage files (includes arweave + icp)
-var lsRaw=localStorage.getItem('web3deploy_files');
-var lsFiles=[];
-try{lsFiles=lsRaw?JSON.parse(lsRaw):[];}catch(e){lsFiles=[];}
+resolveAdapter();
 
 var provider=key.provider;
-if(provider==='arweave'||provider==='icp'){
-  // These providers don't have a pin list, use localStorage files
-  els.cidInput.innerHTML='<option value="">Select a file...</option>';
-  var provFiles=lsFiles.filter(function(f){return f.provider===provider;});
-  if(provFiles.length===0){
-    els.cidInput.innerHTML='<option value="">No files uploaded yet</option>';
-  } else {
-    provFiles.forEach(function(f){
-      var opt=document.createElement('option');
-      opt.value=f.txId||f.url||'';
-      opt.textContent=(f.name||'Unnamed')+' ('+fmtDateShort(f.date)+')';
-      opt.setAttribute('data-url',f.url||'');
-      opt.setAttribute('data-provider',f.provider||provider);
-      opt.setAttribute('data-canister',f.canisterId||'');
-      els.cidInput.appendChild(opt);
-    });
-  }
-  return;
-}
 
 // Pinata — use listPins
 var listFn=providerAdapter&&providerAdapter.listPins?providerAdapter.listPins:(typeof PinataAPI!=='undefined'&&PinataAPI.listPins?PinataAPI.listPins:null);
@@ -98,29 +76,12 @@ els.providerInstructions.textContent=pInfo.instructions;
 
 var records;
 
-if(storageProvider==='arweave'){
-  // Arweave permanent storage — dnslink points to ar:// URL
-  var txId=cidOrRef.replace('https://gateway.irys.xyz/','').replace('https://arweave.net/','');
-  records=[
-    {type:'TXT',host:'@',value:currentChallenge,ttl:'Auto',note:'Proves ownership of this domain'},
-    {type:'TXT',host:'_dnslink',value:'dnslink=/ar/'+txId,ttl:'Auto',note:'Links domain to permanent Arweave content'}
-  ];
-} else if(storageProvider==='icp'){
-  // ICP asset canister — CNAME to canister URL
-  var cId=canisterId||localStorage.getItem('web3deploy_icp_canister_id')||cidOrRef;
-  records=[
-    {type:'TXT',host:'@',value:currentChallenge,ttl:'Auto',note:'Proves ownership of this domain'},
-    {type:'CNAME',host:'www',value:cId+'.icp0.io',ttl:'Auto',note:'Points www subdomain to your ICP canister'},
-    {type:'TXT',host:'_dnslink',value:'dnslink=/ipns/'+cId+'.icp0.io',ttl:'Auto',note:'Links domain to ICP canister (optional)'}
-  ];
-} else {
-  // IPFS providers (Pinata / Filebase / Lighthouse)
-  var cid=cidOrRef;
-  records=[
-    {type:'TXT',host:'@',value:currentChallenge,ttl:'Auto',note:'Proves ownership of this domain'},
-    {type:'TXT',host:'_dnslink',value:'dnslink=/ipfs/'+cid,ttl:'Auto',note:'Links your domain to IPFS content'}
-  ];
-}
+// IPFS providers (Pinata)
+var cid=cidOrRef;
+records=[
+  {type:'TXT',host:'@',value:currentChallenge,ttl:'Auto',note:'Proves ownership of this domain'},
+  {type:'TXT',host:'_dnslink',value:'dnslink=/ipfs/'+cid,ttl:'Auto',note:'Links your domain to IPFS content'}
+];
 
 els.recordsList.innerHTML='';
 records.forEach(function(r){
@@ -141,17 +102,7 @@ if(els.saveBtn) { els.saveBtn.disabled=true; }
 var key=getActiveKey&&getActiveKey();
 var storageProvider=key?key.provider:'pinata';
 var cidOrRef=els.cidInput.value;
-var expectedDnslink;
-if(storageProvider==='arweave'){
-  var txId=cidOrRef.replace('https://gateway.irys.xyz/','').replace('https://arweave.net/','');
-  expectedDnslink='dnslink=/ar/'+txId;
-}else if(storageProvider==='icp'){
-  var selectedOpt=els.cidInput.options[els.cidInput.selectedIndex];
-  var cId=(selectedOpt&&selectedOpt.getAttribute('data-canister'))||localStorage.getItem('web3deploy_icp_canister_id')||cidOrRef;
-  expectedDnslink='dnslink=/ipns/'+cId+'.icp0.io';
-}else{
-  expectedDnslink='dnslink=/ipfs/'+cidOrRef;
-}
+var expectedDnslink='dnslink=/ipfs/'+cidOrRef;
 
 Promise.all([
 fetch('https://dns.google/resolve?name='+domain+'&type=TXT').then(function(r){return r.json();}),
@@ -218,14 +169,7 @@ function showUpdateModal(idx){
 var domains=getDomains();var d=domains[idx];if(!d)return;
 if(els.newCid)els.newCid.textContent=d.cid;
 // Show the correct dnslink format for the domain's storage provider
-var dnslinkVal;
-if(d.storageProvider==='arweave'){
-  dnslinkVal='dnslink=/ar/'+d.cid;
-}else if(d.storageProvider==='icp'){
-  dnslinkVal='dnslink=/ipns/'+d.cid+'.icp0.io';
-}else{
-  dnslinkVal='dnslink=/ipfs/'+d.cid;
-}
+var dnslinkVal='dnslink=/ipfs/'+d.cid;
 if(els.newTxtValue)els.newTxtValue.textContent=dnslinkVal;
 if(els.updateOverlay)els.updateOverlay.classList.add('open');}
 function openUnlink(idx){

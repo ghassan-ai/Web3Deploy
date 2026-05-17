@@ -15,39 +15,7 @@
     <!-- Ethers v6 — MetaMask wallet -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
 
-    <!-- Turbo SDK — Arweave uploads paid in ETH via MetaMask -->
-    <script type="module">
-        try {
-            const { TurboFactory } = await import(
-                'https://esm.sh/@ardrive/turbo-sdk@1.22.0/browser?bundle-deps'
-            );
-            window.TurboFactory = TurboFactory;
-            console.log('✓ Turbo SDK loaded');
-        } catch(e) {
-            console.error('Turbo load failed:', e.message);
-        }
-    </script>
-
-    <!-- DFINITY — ICP (ESM via esm.sh, pinned deps to avoid candid export conflicts) -->
-    <script type="module">
-        try {
-            var _deps = 'deps=@dfinity/candid@2.1.0,@dfinity/principal@2.1.0,@dfinity/agent@2.1.0';
-            const [agent, authClient, principal] = await Promise.all([
-                import('https://esm.sh/@dfinity/agent@2.1.0?no-dts&bundle-deps&' + _deps),
-                import('https://esm.sh/@dfinity/auth-client@2.1.0?no-dts&bundle-deps&' + _deps),
-                import('https://esm.sh/@dfinity/principal@2.1.0?no-dts&bundle-deps&' + _deps)
-            ]);
-            window.ic = window.ic || {};
-            window.ic.HttpAgent = agent.HttpAgent;
-            window.ic.Actor = agent.Actor;
-            window.ic.IDL = agent.IDL;
-            window.ic.AuthClient = authClient.AuthClient;
-            window.ic.Principal = principal.Principal;
-            console.log('✓ DFINITY SDK loaded');
-        } catch(e) {
-            console.error('DFINITY SDK load failed:', e);
-        }
-    </script>
+    <!-- Provider SDKs -->
 </head>
 
 <body>
@@ -161,8 +129,6 @@
                                 <div class="select-wrapper">
                                     <select id="providerSelect" class="form-control form-select">
                                         <option value="pinata">📌 Pinata</option>
-                                        <option value="arweave">🌿 Arweave (Permanent · Irys)</option>
-                                        <option value="icp">∞ ICP (Internet Computer)</option>
                                     </select>
                                     <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16">
                                         <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2"
@@ -258,17 +224,7 @@
                                     <button type="button" class="btn btn-secondary" id="selectFolderBtn">📁 Select
                                         Folder</button>
                                 </div>
-                                <div class="dual-upload-row">
-                                    <label class="toggle-label">
-                                        <input type="checkbox" id="arweaveBackupToggle1">
-                                        <span class="toggle-switch"></span>
-                                        <span>♾️ Also backup to Arweave (permanent)</span>
-                                    </label>
-                                    <span class="toggle-hint" id="arweaveWalletHint1"
-                                        style="display:none;color:#ff5566">
-                                        ⚠️ Set up Arweave wallet first
-                                    </span>
-                                </div>
+                                <!-- Arweave backup option removed for now -->
                             </div>
                         </div>
                     </div>
@@ -286,16 +242,7 @@
                         </div>
                         <div class="file-list-scroll" id="fileListScroll"></div>
                         <div class="file-preview-footer">
-                            <div class="dual-upload-row">
-                                <label class="toggle-label">
-                                    <input type="checkbox" id="arweaveBackupToggle2">
-                                    <span class="toggle-switch"></span>
-                                    <span>♾️ Also backup to Arweave (permanent)</span>
-                                </label>
-                                <span class="toggle-hint" id="arweaveWalletHint2" style="display:none;color:#ff5566">
-                                    ⚠️ Set up Arweave wallet first
-                                </span>
-                            </div>
+                            <!-- Arweave backup option removed for now -->
                             <button type="button" class="btn btn-primary btn-full" id="uploadBtn">🚀 Upload to
                                 IPFS</button>
                         </div>
@@ -343,16 +290,7 @@
                                         title="Open in new tab">🔗</a>
                                 </div>
                             </div>
-                            <div class="result-field" id="arweaveResultField" style="display:none">
-                                <label>♾️ Arweave Backup</label>
-                                <div class="result-value-row">
-                                    <span class="arweave-status" id="arweaveStatus">Uploading...</span>
-                                    <a class="result-link" id="arweaveLink" href="#" target="_blank"
-                                        style="display:none">
-                                        View on Arweave →
-                                    </a>
-                                </div>
-                            </div>
+                            <!-- Arweave Result Field Removed -->
                             <div class="result-actions">
                                 <button type="button" class="btn btn-primary" id="newUploadBtn">↑ Upload
                                     Another</button>
@@ -731,8 +669,7 @@
     <!-- 2. Individual Storage Providers -->
     <script src="js/pinata.js"></script>
     <script src="js/ipfsindex.js"></script>
-    <script src="js/arweave.js"></script>
-    <script src="js/icp.js"></script>
+    <!-- Arweave and ICP scripts removed for now -->
 
     <!-- 3. Provider Registry (depends on all providers above) -->
     <script src="js/storageproviders.js"></script>
